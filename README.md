@@ -20,7 +20,8 @@ project/
 │   └── functions.py     # Additional functions
 │
 ├── modules/             # Main command logic
-│   └── __init__.py      # DB loading, permissions, visuals, global functions
+│   └── __init__.py      # Initializes modules
+│   └── __utils__.py     # Libraries import and modules utilities
 │   └── ...              # Modules with commands
 │
 ├── data/                # SQLite databases
@@ -108,7 +109,7 @@ Run `!help` in Discord to see all available commands.
   ```bash
   python -m helpers.script
   ```
-  
+
 * `data/` — SQLite databases, openable with tools like DB Browser for SQLite
 
 ---

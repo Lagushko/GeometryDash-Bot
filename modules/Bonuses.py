@@ -71,9 +71,10 @@ async def weekly(ctx):
     current_id = weekly_data[0] if weekly_data and len(weekly_data) > 0 else None
     last_time = weekly_data[1] if weekly_data and len(weekly_data) > 1 else 0
 
-    now = int(time.time())
+    now = datetime.now().date()
+    last_date = datetime.fromtimestamp(last_time).date()
 
-    if current_id is None or now - last_time >= 7 * 86400:
+    if current_id is None or (now - last_date).days >= 7:
         with levelDB._connect() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT level_id, difficulty FROM levels")
@@ -89,7 +90,11 @@ async def weekly(ctx):
                 and level_id != current_id
             ):
                 selected_level_id = level_id
-                botDB.update_field(key, [selected_level_id, now])
+                now = datetime.now()
+                monday = now - timedelta(days=now.weekday())
+                monday_midnight = datetime(monday.year, monday.month, monday.day)
+                now_timestamp = int(monday_midnight.timestamp())
+                botDB.update_field(key, [selected_level_id, now_timestamp])
                 break
         else:
             await ctx.send("❌ Failed to select daily level.")

@@ -256,5 +256,10 @@ async def manage(ctx, obj_type: str, obj_id: int, field: str, data: str):
         await ctx.send(
             f"✅ Field `{field}` for level with ID `{obj_id}` has been successfully updated to `{parsed_data}`."
         )
+    elif obj_type.lower() == "settings":
+        botDB.update_field(field, parsed_data)
+        await ctx.send(
+            f"✅ Field `{field}` in settings has been successfully updated to `{parsed_data}`."
+        )
     else:
-        await ctx.send("❌ Invalid object type. Use `user` or `level`.")
+        await ctx.send("❌ Invalid object type. Use `user`, `level`, or `settings`.")

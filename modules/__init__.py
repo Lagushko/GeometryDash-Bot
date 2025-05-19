@@ -5,7 +5,7 @@ from discord.ext import commands
 import ast
 import time
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from database import *
 from config import *

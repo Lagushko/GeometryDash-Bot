@@ -8,7 +8,6 @@ import asyncio
 from datetime import datetime, timedelta
 
 from database import *
-from config import *
 from utils import *
 
 # Disposable memory

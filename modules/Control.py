@@ -1,4 +1,4 @@
-from modules import *
+from .__utils__ import *
 from bot import bot
 
 async def update_db(ctx, table: str, field: str, default: str, type: str):

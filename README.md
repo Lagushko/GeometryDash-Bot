@@ -105,9 +105,11 @@ Run `!help` in Discord to see all available commands.
 
 * `helpers/` — optional scripts for manually editing databases (not required)
   Launch with:
+  
   ```bash
   python -m helpers.script
   ```
+  
 * `data/` — SQLite databases, openable with tools like DB Browser for SQLite
 
 ---

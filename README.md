@@ -103,8 +103,7 @@ Run `!help` in Discord to see all available commands.
 
 ## 📦 Extras
 
-* `helpers/` — optional scripts for manually editing databases (not required)
-  Launch with:
+* `helpers/` — optional scripts for manually editing databases (not required). Launch with:
   
   ```bash
   python -m helpers.script

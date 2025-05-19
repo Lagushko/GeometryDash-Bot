@@ -11,15 +11,18 @@ project/
 │
 ├── bot.py               # Bot creation and configuration
 ├── database.py          # Handles user, level, and global database logic
-├── config.py            # Bot configuration from .env
-├── utils.py             # Utilities and constants
 ├── main.py              # Bot launch and commands registration
+│
+├── utils/               # Utils for project
+│   ├── config.py        # Loads all configuration from .env
+│   ├── constants.py     # Constants like emojis
+│   └── functions.py     # Additional functions
 │
 ├── modules/             # Main command logic
 │   └── __init__.py      # DB loading, permissions, visuals, global functions
 │   └── ...              # Modules with commands
 │
-├── data/                # SQLite databases:
+├── data/                # SQLite databases
 │   ├── users.db         # User data
 │   ├── levels.db        # Saved levels
 │   └── settings.db      # Global bot data

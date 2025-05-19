@@ -67,8 +67,11 @@ Run `!help` in Discord to see all available commands.
 
 ### Basic Commands:
 
-* `!help`, `!profile`, `!leaderboards`, `!main`
-* `!visual`, `!search`, `!recent`, `!creator`
+* `!help`, `!profile`, `!leaderboards`, `!visual`
+
+### Levels:
+
+* `!main`, `!search`, `!recent`, `!creator`
 
 ### Interaction:
 

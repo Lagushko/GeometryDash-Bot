@@ -13,7 +13,8 @@ project/
 ├── database.py          # Handles user, level, and global database logic
 ├── main.py              # Bot launch and commands registration
 │
-├── utils/               # Utils for project
+├── utils/               # Utilities for project
+│   ├── __init__.py      # Initializes all utils files
 │   ├── config.py        # Loads all configuration from .env
 │   ├── constants.py     # Constants like emojis
 │   └── functions.py     # Additional functions

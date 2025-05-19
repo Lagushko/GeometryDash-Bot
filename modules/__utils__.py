@@ -10,9 +10,6 @@ from datetime import datetime, timedelta
 from database import *
 from utils import *
 
-from database import *
-from utils import *
-
 # Disposable memory
 current_levels = {}
 cheat_modes = {}

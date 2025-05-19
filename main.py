@@ -2,6 +2,7 @@ from bot import bot
 
 from modules import *
 from modules import Basic
+from modules import Levels
 from modules import Interaction
 from modules import Bonuses
 from modules import Shop
@@ -37,13 +38,16 @@ async def on_message(message):
 
 # ----- BASIC COMMANDS ------ #
 bot.command(name='help')(Basic.help)
+bot.command(name='link')(Basic.link)
 bot.command(name='profile')(Basic.profile)
 bot.command(name='leaderboards')(Basic.leaderboards)
-bot.command(name='main')(Basic.main)
 bot.command(name='visual')(Basic.visual)
-bot.command(name='search')(Basic.search)
-bot.command(name='recent')(Basic.recent)
-bot.command(name='creator')(Basic.creator)
+
+# ---------- LEVELS --------- #
+bot.command(name='main')(Levels.main)
+bot.command(name='search')(Levels.search)
+bot.command(name='recent')(Levels.recent)
+bot.command(name='creator')(Levels.creator)
 
 # ------- INTERACTION ------- #
 bot.command(name='join')(Interaction.join)

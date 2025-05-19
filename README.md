@@ -22,11 +22,12 @@ project/
 ├── data/                # SQLite databases:
 │   ├── users.db         # User data
 │   ├── levels.db        # Saved levels
-│   └── settings.db           # Global bot data
+│   └── settings.db      # Global bot data
 │
 ├── helpers/             # Manual DB tools (not required for bot to run)
 │   └── *.py             # Admin scripts for manual data management
 │
+├── .env                 # Secret bot data
 └── requirements.txt     # Project dependencies
 ```
 

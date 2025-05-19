@@ -25,7 +25,7 @@ project/
 │   └── settings.db      # Global bot data
 │
 ├── helpers/             # Manual DB tools (not required for bot to run)
-│   └── *.py             # Admin scripts for manual data management
+│   └── ...              # Admin scripts for manual data management
 │
 ├── .env                 # Secret bot data
 └── requirements.txt     # Project dependencies

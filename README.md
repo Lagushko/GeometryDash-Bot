@@ -62,32 +62,32 @@ Includes classes:
 
 Run `!help` in Discord to see all available commands.
 
-### General:
+### Basic Commands:
 
 * `!help`, `!profile`, `!leaderboards`, `!main`
 * `!visual`, `!search`, `!recent`, `!creator`
 
-### Gameplay:
+### Interaction:
 
 * `!join`, `!quit`, `!play`, `!like`, `!dislike`
 
-### Rewards:
+### Bonuses:
 
 * `!daily`, `!weekly`, `!reward`
 
-### Shop:
+### Icon Shop:
 
 * `!shop`, `!buy`, `!equip`
 
-### Level Submission:
+### Submissions:
 
 * `!send`, `!sent-list`
 
-### Admin (staff only):
+### Admin Only:
 
 * `!add-level`, `!delete-user`, `!delete-level`, `!cheats`, `!manage`
 
-### Owner Only:
+### Bot Control:
 
 * `!update-db`, `!set-db`, `!role`, `!data`
 

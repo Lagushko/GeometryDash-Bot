@@ -37,31 +37,6 @@ project/
 
 ---
 
-## ⚙️ Components
-
-### `main.py`
-
-Registers commands, and sets up the Discord client.
-
-### `database.py`
-
-Includes classes:
-
-* `UserDatabase` — manages player data
-* `LevelDatabase` — manages stored levels
-* `BotDatabase` — manages global data (roles, settings, etc.)
-
-### `modules/__init__.py`
-
-* Loads modules, databases, and config
-* Contains utility functions:
-
-  * `permission(level)` — checks if a user has a specific access level (e.g., helper, admin)
-  * `get_difficulty_visual(user_id, difficulty)` — returns emoji for level difficulty based on player's visual settings
-  * `get_search_difficulties(user_id, name)` — filters level search results by difficulty and player settings
-
----
-
 ## 📖 Commands
 
 Run `!help` in Discord to see all available commands.
@@ -128,7 +103,11 @@ Run `!help` in Discord to see all available commands.
 
 ## 📦 Extras
 
-* `helpers/` — optional scripts for manually editing databases (not required) (launch with python -m helpers.script)
+* `helpers/` — optional scripts for manually editing databases (not required)
+  Launch with:
+  ```bash
+  python -m helpers.script
+  ```
 * `data/` — SQLite databases, openable with tools like DB Browser for SQLite
 
 ---

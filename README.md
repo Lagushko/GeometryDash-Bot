@@ -29,7 +29,7 @@ project/
 │   ├── levels.db        # Saved levels
 │   └── settings.db      # Global bot data
 │
-├── helpers/             # Manual DB tools (not required for bot to run)
+├── manual/             # Manual DB tools (not required for bot to run)
 │   └── ...              # Admin scripts for manual data management
 │
 ├── .env                 # Secret bot data
@@ -104,10 +104,10 @@ Run `!help` in Discord to see all available commands.
 
 ## 📦 Extras
 
-* `helpers/` — optional scripts for manually editing databases (not required). Launch with:
+* `manual/` — optional scripts for manually editing databases (not required). Launch with:
   
   ```bash
-  python -m helpers.script
+  python -m manual.script
   ```
 
 * `data/` — SQLite databases, openable with tools like DB Browser for SQLite

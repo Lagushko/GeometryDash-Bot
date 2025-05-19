@@ -39,7 +39,7 @@ async def set_db(ctx, table: str, field: str, *, value: str):
     db_path = "data/users.db" if table == "users" else "data/levels.db"
 
     try:
-        parsed_value = ast.literal_eval(value)
+        parsed_value = ast.literal_eval(value) if table == "users" else value
     except:
         parsed_value = value
 

@@ -1,7 +1,7 @@
 from .__utils__ import *
 from bot import bot
 
-async def add_level(ctx, level_id: int, name: str, difficulty: int, downloads: int, likes: int, time: int, coins: int, sender: int):
+async def add_level(ctx, level_id: str, name: str, difficulty: int, downloads: int, likes: int, time: int, coins: int, sender: int):
     admins = botDB.get("admins") or []
     moderators = botDB.get("moderators") or []
     if ctx.author.id in (admins + Config.OWNER + moderators):
@@ -26,7 +26,7 @@ async def add_level(ctx, level_id: int, name: str, difficulty: int, downloads: i
 
         user_data = userDB.get(sender)
         user_data["creatorpoints"] += 1
-        user_data["creations"].append(int(level_id))
+        user_data["creations"].append(level_id)
         userDB.update_field(sender, "creatorpoints", user_data['creatorpoints'])
         userDB.update_field(sender, "creations", user_data['creations'])
 
@@ -105,7 +105,7 @@ async def delete_user(ctx, user_id: int):
         except Exception as e:
             await ctx.send(f"⚠️ An error occurred while deleting the user: `{e}`")
 
-async def delete_level(ctx, level_id: int):
+async def delete_level(ctx, level_id: str):
     admins = botDB.get("admins") or []
     moderators = botDB.get("moderators") or []
     if ctx.author.id in (admins + Config.OWNER + moderators) and level_id not in MAIN_LEVELS:
@@ -236,9 +236,12 @@ async def cheats(ctx, mode: str, switch: str):
     cheat_modes[ctx.author.id][mode] = 1 if switch == "on" else 0
     await ctx.send(f"✅ Successfully turned {switch} `{mode}` cheats!")
 
-async def manage(ctx, obj_type: str, obj_id: int, field: str, data: str):
+async def manage(ctx, obj_type: str, obj_id: str, field: str, data: str):
     if ctx.author.id not in permission(3):
         return
+    
+    if obj_type == "users":
+        obj_id = int(obj_id)
 
     try:
         parsed_data = ast.literal_eval(data)

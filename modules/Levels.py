@@ -15,7 +15,7 @@ async def main(ctx):
         stars = min(data["difficulty"], 10)
         mana = ORBS[stars - 1] if stars > 0 else 0
 
-        users_level_progress = (played[str(i)]['record']) if str(i) in played else ""
+        users_level_progress = (played[i]['record']) if i in played else ""
         if users_level_progress == 100:
             users_level_progress = EMOJIS['checkmark']
         elif users_level_progress:
@@ -23,7 +23,7 @@ async def main(ctx):
         else:
             users_level_progress = ""
 
-        count_coins = (played[str(i)]['coins']) if str(i) in played else [0 for _ in range(data['coins'])]
+        count_coins = (played[i]['coins']) if i in played else [0 for _ in range(data['coins'])]
         level_coins = " "
         if len(count_coins) > 0:
             level_coins = "".join(EMOJIS['goldcoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
@@ -117,6 +117,7 @@ async def search(ctx, *, args=None):
     else:
         try:
             level_id = int(data)
+            level_id = data
             if level_id in MAIN_LEVELS:
                 rows = []
             else:
@@ -159,6 +160,9 @@ async def search(ctx, *, args=None):
 
     results = []
     for row in rows:
+        if row[0] in ["daily", "weekly"]:
+            continue
+        
         level_data = {
             "level_id": row[0],
             "name": row[1],
@@ -175,7 +179,7 @@ async def search(ctx, *, args=None):
         mana = ORBS[stars - 1] if stars > 0 else 0
         rate_emoji = EMOJIS['like'] if level_data['likes'] >= 0 else EMOJIS['dislike']
 
-        users_level_data = (played[str(level_data['level_id'])]['record']) if str(level_data['level_id']) in played else None
+        users_level_data = (played[level_data['level_id']]['record']) if level_data['level_id'] in played else None
         if users_level_data == 100:
             users_level_data = EMOJIS['checkmark']
         elif users_level_data:
@@ -183,7 +187,7 @@ async def search(ctx, *, args=None):
         else:
             users_level_data = ""
         
-        count_coins = (played[str(level_data['level_id'])]['coins']) if str(level_data['level_id']) in played else [0 for _ in range(level_data['coins'])]
+        count_coins = (played[level_data['level_id']]['coins']) if level_data['level_id'] in played else [0 for _ in range(level_data['coins'])]
         level_coins = " "
         if len(count_coins) > 0:
             level_coins = "".join(EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
@@ -255,7 +259,7 @@ async def recent(ctx):
         mana = ORBS[stars - 1] if stars > 0 else 0
         rate_emoji = EMOJIS['like'] if data['likes'] >= 0 else EMOJIS['dislike']
 
-        users_level_progress = (played[str(level_id)]['record']) if str(level_id) in played else ""
+        users_level_progress = (played[level_id]['record']) if level_id in played else ""
         if users_level_progress == 100:
             users_level_progress = EMOJIS['checkmark']
         elif users_level_progress:
@@ -263,7 +267,7 @@ async def recent(ctx):
         else:
             users_level_progress = ""
 
-        count_coins = (played[str(level_id)]['coins']) if str(level_id) in played else [0 for _ in range(data['coins'])]
+        count_coins = (played[level_id]['coins']) if level_id in played else [0 for _ in range(data['coins'])]
         level_coins = " "
         if len(count_coins) > 0:
             level_coins = "".join(EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
@@ -335,7 +339,7 @@ async def creator(ctx, member: discord.Member):
 
     levels = []
     for i, level_id in enumerate(creation_ids, start=1):
-        if int(level_id) in MAIN_LEVELS:
+        if level_id in MAIN_LEVELS:
             continue
 
         data = levelDB.get(level_id)
@@ -349,7 +353,7 @@ async def creator(ctx, member: discord.Member):
         rate_emoji = EMOJIS['like'] if data['likes'] >= 0 else EMOJIS['dislike']
 
         played = userDB.get(ctx.author.id).get('played', {})
-        users_level_progress = (played[str(level_id)]['record']) if str(level_id) in played else ""
+        users_level_progress = (played[level_id]['record']) if level_id in played else ""
         if users_level_progress == 100:
             users_level_progress = EMOJIS['checkmark']
         elif users_level_progress:
@@ -357,7 +361,7 @@ async def creator(ctx, member: discord.Member):
         else:
             users_level_progress = ""
 
-        count_coins = (played[str(level_id)]['coins']) if str(level_id) in played else [0 for _ in range(data['coins'])]
+        count_coins = (played[level_id]['coins']) if level_id in played else [0 for _ in range(data['coins'])]
         level_coins = " "
         if len(count_coins) > 0:
             level_coins = "".join(EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "

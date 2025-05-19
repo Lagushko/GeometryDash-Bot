@@ -91,7 +91,7 @@ class LevelDatabase:
             cursor = conn.cursor()
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS levels (
-                    level_id INTEGER PRIMARY KEY,
+                    level_id TEXT PRIMARY KEY,
                     name TEXT,
                     difficulty INTEGER,
                     downloads INTEGER,
@@ -103,7 +103,7 @@ class LevelDatabase:
             """)
             conn.commit()
 
-    def add(self, level_id: int, name: str, difficulty: int, downloads: int, likes: int, time: int, coins: int, sender: int):
+    def add(self, level_id: str, name: str, difficulty: int, downloads: int, likes: int, time: int, coins: int, sender: int):
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -112,7 +112,7 @@ class LevelDatabase:
             """, (level_id, name, difficulty, downloads, likes, time, coins, sender))
             conn.commit()
 
-    def get(self, level_id: int):
+    def get(self, level_id: str):
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM levels WHERE level_id = ?", (level_id,))
@@ -130,7 +130,7 @@ class LevelDatabase:
                 }
             return None
 
-    def update_field(self, level_id: int, field: str, value):
+    def update_field(self, level_id: str, field: str, value):
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute(f"UPDATE levels SET {field} = ? WHERE level_id = ?", (value, level_id))

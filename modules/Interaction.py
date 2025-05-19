@@ -1,7 +1,7 @@
 from .__utils__ import *
 from bot import bot
 
-async def join(ctx, level_id: int):
+async def join(ctx, level_id: str):
     guild_id = ctx.guild.id
     user_id = ctx.author.id
 
@@ -16,9 +16,12 @@ async def join(ctx, level_id: int):
         return
 
     played = user_data.get("played", {})
-    level_id_str = str(level_id)
-    if level_id_str not in played:
-        played[level_id_str] = {
+    level_id = str(level_id)
+    edited_level_id = level_id
+    if level_id in ['weekly', 'daily']:
+        edited_level_id += botDB.get(level_id)[0]
+    if edited_level_id not in played:
+        played[edited_level_id] = {
             "attempts": 0,
             "record": 0,
             "rated": False,
@@ -61,7 +64,7 @@ async def quit(ctx):
     )
     await ctx.send(embed=embed)
 
-async def play(ctx, level_id: int = None):
+async def play(ctx, level_id: str = None):
     guild_id = ctx.guild.id
     user_id = ctx.author.id
 
@@ -89,10 +92,12 @@ async def play(ctx, level_id: int = None):
 
     bot.play_locks.add(user_id)
 
-    level_id_str = str(level_id)
     played = user_data.get("played", {})
-    if level_id_str not in played:
-        played[level_id_str] = {
+    edited_level_id = level_id
+    if level_id in ['weekly', 'daily']:
+        edited_level_id += botDB.get(level_id)[0]
+    if edited_level_id not in played:
+        played[edited_level_id] = {
             "attempts": 0,
             "record": 0,
             "rated": False,
@@ -100,8 +105,8 @@ async def play(ctx, level_id: int = None):
         }
         level["downloads"] = level.get("downloads", 0) + 1
         levelDB.update_field(level_id, "downloads", level["downloads"])
-    played[level_id_str]["attempts"] += 1
-    attempt_num = played[level_id_str]["attempts"]
+    played[edited_level_id]["attempts"] += 1
+    attempt_num = played[edited_level_id]["attempts"]
     userDB.update_field(user_id, "played", played)
 
     cheat = cheat_modes.get(user_id, {})
@@ -117,7 +122,7 @@ async def play(ctx, level_id: int = None):
 
     difficulty_emoji = get_difficulty_visual(user_id, level['difficulty'])
     embed = discord.Embed(
-        title=f"{difficulty_emoji} {level['name']} `{str(played[level_id_str]['record'])}%`",
+        title=f"{difficulty_emoji} {level['name']} `{played[edited_level_id]['record']}%`",
         description=f"🎮 Attempt {attempt_num}\n{EMOJIS['time']} Playing... 0s",
         colour=discord.Colour.orange()
     )
@@ -132,8 +137,8 @@ async def play(ctx, level_id: int = None):
     response = f"🎮 Attempt {attempt_num}\n💥 **{percent}%**"
     new_best = False
 
-    if percent > played[level_id_str]["record"]:
-        played[level_id_str]["record"] = percent
+    if percent > played[edited_level_id]["record"]:
+        played[edited_level_id]["record"] = percent
         userDB.update_field(user_id, "played", played)
         new_best = True
         response += " **New Best! 🔥**"
@@ -142,10 +147,10 @@ async def play(ctx, level_id: int = None):
         response += f"\n\n{EMOJIS['checkmark']} **Level Completed!** "
         coins_reward = []
         coins_reward = [random.randint(0, 1) for _ in range(level['coins'])]
-        all_coins = [max(a, b) for a, b in zip(played[level_id_str]['coins'], coins_reward)]
-        new_coins = max(0, all_coins.count(1) - played[level_id_str]['coins'].count(1))
+        all_coins = [max(a, b) for a, b in zip(played[edited_level_id]['coins'], coins_reward)]
+        new_coins = max(0, all_coins.count(1) - played[edited_level_id]['coins'].count(1))
 
-        played[level_id_str]['coins'] = all_coins.copy()
+        played[edited_level_id]['coins'] = all_coins.copy()
 
         coin_type = 'goldcoin' if level['level_id'] in MAIN_LEVELS else 'usercoin'
         user_data[coin_type + "s"] += new_coins
@@ -166,13 +171,7 @@ async def play(ctx, level_id: int = None):
             userDB.update_field(user_id, "orbs", user_data["orbs"])
             userDB.update_field(user_id, "stars", user_data["stars"])
 
-            daily_level = botDB.get("daily")
-            weekly_level = botDB.get("weekly")
-
-            daily_id = str(daily_level[0]) if daily_level and len(daily_level) > 0 and daily_level[0] is not None else None
-            weekly_id = str(weekly_level[0]) if weekly_level and len(weekly_level) > 0 and weekly_level[0] is not None else None
-
-            if str(level_id) in [daily_id, weekly_id]:
+            if str(level_id) in ["daily", "weekly"]:
                 diamond_reward = DIAMONDS[stars - 1]
                 user_data["diamonds"] += diamond_reward
                 userDB.update_field(user_id, "diamonds", user_data["diamonds"])
@@ -198,7 +197,7 @@ async def play(ctx, level_id: int = None):
                 response += f"+ {EMOJIS['demon']} 1 Demon\n"
 
     final_embed = discord.Embed(
-        title=f"{difficulty_emoji} {level['name']} `{str(played[level_id_str]['record'])}%`",
+        title=f"{difficulty_emoji} {level['name']} `{str(played[edited_level_id]['record'])}%`",
         description=response,
         colour=discord.Colour.green() if percent == 100 else discord.Colour.blue()
     )
@@ -206,13 +205,15 @@ async def play(ctx, level_id: int = None):
 
     bot.play_locks.remove(user_id)
 
-async def like(ctx, level_id: int):
+async def like(ctx, level_id: str):
     user_id = ctx.author.id
     user_data = userDB.get(user_id)
 
     played = user_data.get("played", {})
-    level_id_str = str(level_id)
-    level_played = played.get(level_id_str)
+    edited_level_id = level_id
+    if level_id in ['weekly', 'daily']:
+        edited_level_id += botDB.get(level_id)[0]
+    level_played = played.get(edited_level_id)
 
     if not level_played or level_played.get("attempts", 0) <= 0:
         await ctx.send("❗ You must play this level at least once before liking it.")
@@ -231,7 +232,7 @@ async def like(ctx, level_id: int):
     levelDB.update_field(level_id, "likes", new_likes)
 
     level_played["rated"] = True
-    played[level_id_str] = level_played
+    played[edited_level_id] = level_played
     userDB.update_field(user_id, "played", played)
 
     embed = discord.Embed(
@@ -241,13 +242,15 @@ async def like(ctx, level_id: int):
     )
     await ctx.send(embed=embed)
 
-async def dislike(ctx, level_id: int):
+async def dislike(ctx, level_id: str):
     user_id = ctx.author.id
     user_data = userDB.get(user_id)
 
     played = user_data.get("played", {})
-    level_id_str = str(level_id)
-    level_played = played.get(level_id_str)
+    edited_level_id = level_id
+    if level_id in ['weekly', 'daily']:
+        edited_level_id += botDB.get(level_id)[0]
+    level_played = played.get(edited_level_id)
 
     if not level_played or level_played.get("attempts", 0) <= 0:
         await ctx.send("❗ You must play this level at least once before disliking it.")
@@ -266,7 +269,7 @@ async def dislike(ctx, level_id: int):
     levelDB.update_field(level_id, "likes", new_likes)
 
     level_played["rated"] = True
-    played[level_id_str] = level_played
+    played[edited_level_id] = level_played
     userDB.update_field(user_id, "played", played)
 
     embed = discord.Embed(

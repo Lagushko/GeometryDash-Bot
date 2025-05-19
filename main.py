@@ -1,14 +1,5 @@
 from bot import bot
-
 from modules import *
-from modules import Basic
-from modules import Levels
-from modules import Interaction
-from modules import Bonuses
-from modules import Shop
-from modules import Submissions
-from modules import Admin
-from modules import Control
 
 @bot.event
 async def on_ready():

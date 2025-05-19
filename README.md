@@ -35,9 +35,9 @@ project/
 
 ## ⚙️ Components
 
-### `bot.py`
+### `main.py`
 
-Initializes the bot, registers commands, and sets up the Discord client.
+Registers commands, and sets up the Discord client.
 
 ### `database.py`
 

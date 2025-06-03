@@ -15,7 +15,7 @@ async def main(ctx):
         stars = min(data["difficulty"], 10)
         mana = ORBS[stars - 1] if stars > 0 else 0
 
-        users_level_progress = (played[i]['record']) if i in played else ""
+        users_level_progress = (played[str(i)]['record']) if str(i) in played else ""
         if users_level_progress == 100:
             users_level_progress = EMOJIS['checkmark']
         elif users_level_progress:
@@ -23,7 +23,7 @@ async def main(ctx):
         else:
             users_level_progress = ""
 
-        count_coins = (played[i]['coins']) if i in played else [0 for _ in range(data['coins'])]
+        count_coins = (played[str(i)]['coins']) if str(i) in played else [0 for _ in range(data['coins'])]
         level_coins = " "
         if len(count_coins) > 0:
             level_coins = "".join(EMOJIS['goldcoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
@@ -31,7 +31,7 @@ async def main(ctx):
         level_str = (
             f"`ID {i}:`\n"
             f"{emoji_difficulty} {data['name']} {level_coins}{users_level_progress}\n"
-            f"{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}"
+            f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}"
         )
         levels.append(level_str)
 
@@ -195,8 +195,8 @@ async def search(ctx, *, args=None):
         text = (
             f"`ID {level_data['level_id']}:`\n"
             f"{emoji_difficulty} {level_data['name']} {level_coins}{users_level_data}\n"
-            f"{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}\n"
-            f"{EMOJIS['download']}{level_data['downloads']} {rate_emoji}{level_data['likes']} {EMOJIS['time']}{level_time(level_data['time'])}"
+            f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}\n"
+            f"{TAB*2}{EMOJIS['download']}{level_data['downloads']} {rate_emoji}{level_data['likes']} {EMOJIS['time']}{level_time(level_data['time'])}"
         )
         results.append(text)
 
@@ -275,8 +275,8 @@ async def recent(ctx):
         level_str = (
             f"`ID {level_id}:`\n"
             f"{emoji_difficulty} {data['name']} {level_coins}{users_level_progress}\n"
-            f"{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}\n"
-            f"{EMOJIS['download']}{data['downloads']} {rate_emoji}{data['likes']} {EMOJIS['time']}{level_time(data['time'])}"
+            f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}\n"
+            f"{TAB*2}{EMOJIS['download']}{data['downloads']} {rate_emoji}{data['likes']} {EMOJIS['time']}{level_time(data['time'])}"
         )
         levels.append(level_str)
 
@@ -369,8 +369,8 @@ async def creator(ctx, member: discord.Member):
         level_str = (
             f"`ID {level_id}:`\n"
             f"{emoji_difficulty} {data['name']} {level_coins}{users_level_progress}\n"
-            f"{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}\n"
-            f"{EMOJIS['download']}{data['downloads']} {rate_emoji}{data['likes']} {EMOJIS['time']}{level_time(data['time'])}"
+            f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}\n"
+            f"{TAB*2}{EMOJIS['download']}{data['downloads']} {rate_emoji}{data['likes']} {EMOJIS['time']}{level_time(data['time'])}"
         )
         levels.append(level_str)
 

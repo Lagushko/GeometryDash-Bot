@@ -72,8 +72,8 @@ async def daily(ctx):
     embed.description = (
         f"`ID {key}:`\n"
         f"{emoji} {level['name']} {level_coins}{users_level_data}\n"
-        f"{EMOJIS['star']}{stars} {EMOJIS['diamond']}{diamonds} {EMOJIS['manaorbs']}{mana}\n"
-        f"{EMOJIS['download']}{level['downloads']} {rate_emoji}{level['likes']} {EMOJIS['time']}{level_time(level['time'])}"
+        f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['diamond']}{diamonds} {EMOJIS['manaorbs']}{mana}\n"
+        f"{TAB*2}{EMOJIS['download']}{level['downloads']} {rate_emoji}{level['likes']} {EMOJIS['time']}{level_time(level['time'])}"
     )
 
     await ctx.send(embed=embed)
@@ -145,14 +145,14 @@ async def weekly(ctx):
         level_coins = "".join(EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
 
     embed = discord.Embed(
-        title="📅 Daily Level",
+        title="📅 Weekly Level",
         color=discord.Color.orange()
     )
     embed.description = (
         f"`ID {key}:`\n"
         f"{emoji} {level['name']} {level_coins}{users_level_data}\n"
-        f"{EMOJIS['star']}{stars} {EMOJIS['diamond']}{diamonds} {EMOJIS['manaorbs']}{mana}\n"
-        f"{EMOJIS['download']}{level['downloads']} {rate_emoji}{level['likes']} {EMOJIS['time']}{level_time(level['time'])}"
+        f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['diamond']}{diamonds} {EMOJIS['manaorbs']}{mana}\n"
+        f"{TAB*2}{EMOJIS['download']}{level['downloads']} {rate_emoji}{level['likes']} {EMOJIS['time']}{level_time(level['time'])}"
     )
 
     await ctx.send(embed=embed)
@@ -162,29 +162,155 @@ async def reward(ctx):
     user_data = userDB.get(user_id)
 
     now = int(time.time())
-    last_claim = user_data.get("last_reward_time", 0)
+    last_rewards = user_data.get("last_reward_time", [0, 0])
+    small_ready = now - last_rewards[0] >= 14400
+    large_ready = now - last_rewards[1] >= 86400
 
-    if now - last_claim >= 86400:
-        new_orbs = user_data["orbs"] + 100
-        userDB.update_field(user_id, "orbs", new_orbs)
-        userDB.update_field(user_id, "last_reward_time", now)
+    embed = discord.Embed(
+        title="🎁 Chest Rewards",
+        color=discord.Color.gold()
+    )
 
-        embed = discord.Embed(
-            title="🎁 Daily Reward",
-            description=f"You received **100** {EMOJIS['manaorbs']} Mana Orbs!",
-            color=discord.Color.green()
-        )
-        embed.set_footer(text="Come back tomorrow for more rewards.")
-        await ctx.send(embed=embed)
+    small_value = ""
+    if small_ready:
+        manaorbs = random.randint(4, 10) * 5
+        diamonds = random.randint(1, 4)
+        small_value += f"+ {EMOJIS['manaorbs']} {manaorbs} Mana Orbs\n"
+        small_value += f"+ {EMOJIS['diamond']} {diamonds} Diamonds"
+        userDB.update_field(user_id, "orbs", user_data["orbs"] + manaorbs)
+        userDB.update_field(user_id, "diamonds", user_data.get("diamonds", 0) + diamonds)
+        last_rewards[0] = now
     else:
-        remaining = 86400 - (now - last_claim)
+        remaining = 14400 - (now - last_rewards[0])
         hours = remaining // 3600
         minutes = (remaining % 3600) // 60
         seconds = remaining % 60
+        small_value += f"{EMOJIS['time']} You can open it in {hours}h {minutes}m {seconds}s"
+    embed.add_field(name=f"{EMOJIS['smallchest']} Small Chest", value=small_value, inline=False)
+
+    large_value = ""
+    if large_ready:
+        manaorbs = random.randint(4, 12) * 25
+        diamonds = random.randint(4, 10)
+        large_value += f"+ {EMOJIS['manaorbs']} {manaorbs} Mana Orbs\n"
+        large_value += f"+ {EMOJIS['diamond']} {diamonds} Diamonds"
+        userDB.update_field(user_id, "orbs", userDB.get(user_id)["orbs"] + manaorbs)
+        userDB.update_field(user_id, "diamonds", userDB.get(user_id).get("diamonds", 0) + diamonds)
+        last_rewards[1] = now
+    else:
+        remaining = 86400 - (now - last_rewards[1])
+        hours = remaining // 3600
+        minutes = (remaining % 3600) // 60
+        seconds = remaining % 60
+        large_value += f"{EMOJIS['time']} You can open it in {hours}h {minutes}m {seconds}s"
+    embed.add_field(name=f"{EMOJIS['largechest']} Large Chest", value=large_value, inline=False)
+
+    userDB.update_field(user_id, "last_reward_time", last_rewards)
+
+    await ctx.send(embed=embed)
+
+async def map_pack(ctx, pack_id: str = None, collect: str = None):
+    user_data = userDB.get(ctx.author.id)
+    played = user_data['played']
+
+    map_packs = botDB.get("mappacks")
+
+    if pack_id and pack_id not in map_packs:
+        await ctx.send(f"❌ Map pack with ID: `{pack_id}` doesn't exist.")
+        return
+
+    if collect == "collect":
+        pdata = map_packs[pack_id]
+
+        levels = [levelDB.get(str(lid)) for lid in pdata['levels']]
+        total = len(levels)
+        completed = [lvl for lvl in levels if lvl['level_id'] in played and played[lvl['level_id']]['record'] == 100]
+
+        if len(completed) < total:
+            await ctx.send(f"❌ You have only {len(completed)}/{total} levels completed in this map pack. Complete all to take your reward.")
+            return
+
+        if f"mappack{pack_id}" in user_data['collected']:
+            await ctx.send(f"❌ You already collected reward from this map pack.")
+            return
+        
+        avg_difficulty = round(sum(lvl['difficulty'] for lvl in levels) / total)
+        stars = min(10, avg_difficulty)
+        coins = (1 if pdata['difficulty'] < 10 else 2)
+        
+        user_data['collected'].append(f"mappack{pack_id}")
+        user_data['goldcoins'] += coins
+        user_data['stars'] += stars
+
+        userDB.update_field(ctx.author.id, 'collected', user_data['collected'])
+        userDB.update_field(ctx.author.id, 'goldcoins', user_data['goldcoins'])
+        userDB.update_field(ctx.author.id, 'stars', user_data['stars'])
 
         embed = discord.Embed(
-            title="⏳ Too Soon!",
-            description=f"You've already claimed your reward.\nTry again in {hours:02d}h {minutes:02d}m.",
-            color=discord.Color.orange()
+            title=f"{EMOJIS[DIFFICULTIES[pdata['difficulty']-1]]} {pdata['name']} reward",
+            description=f"+ {EMOJIS['star']} {stars} Stars\n+ {EMOJIS['goldcoin']} {coins} Gold Coins"
         )
+
         await ctx.send(embed=embed)
+        return
+    else:
+        if pack_id:
+            data = map_packs[pack_id]
+            levels = [levelDB.get(str(x)) for x in data['levels']]
+
+            field_text = ""
+
+            for level_data in levels:
+                lid = level_data['level_id']
+                user_record = played[lid]['record'] if lid in played else None
+                if user_record == 100:
+                    user_record = EMOJIS['checkmark']
+                elif user_record is not None:
+                    user_record = f"`{user_record}%`"
+                else:
+                    user_record = ""
+
+                coins_got = played[lid]['coins'] if lid in played else [0] * level_data['coins']
+                level_coins = "".join(
+                    EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in coins_got
+                ) + " " if coins_got else " "
+
+                rate_emoji = EMOJIS['like'] if level_data['likes'] >= 0 else EMOJIS['dislike']
+                field_text += (
+                    f"`ID {lid}:`\n"
+                    f"{EMOJIS[DIFFICULTIES[level_data['difficulty']-1]]} {level_data['name']} {level_coins}{user_record}\n"
+                    f"{TAB*2}{EMOJIS['star']}{min(10, level_data['difficulty'])} "
+                    f"{EMOJIS['manaorbs']}{ORBS[min(10, level_data['difficulty'])]}\n"
+                    f"{TAB*2}{EMOJIS['download']}{level_data['downloads']} {rate_emoji}{level_data['likes']} "
+                    f"{EMOJIS['time']}{level_time(level_data['time'])}\n\n"
+                )
+
+            embed = discord.Embed(
+                title=f"{EMOJIS[DIFFICULTIES[data['difficulty']-1]]} {data['name']}", 
+                description=field_text,
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed)
+
+        else:
+            embed = discord.Embed(title="📁 Map Packs", color=discord.Color.green())
+            description = ""
+
+            for pid, pdata in map_packs.items():
+                levels = [levelDB.get(str(lid)) for lid in pdata['levels']]
+                total = len(levels)
+                completed = sum(1 for lvl in levels if lvl['level_id'] in played and played[lvl['level_id']]['record'] == 100)
+                check = EMOJIS['checkmark'] if f"mappack{pid}" in user_data['collected'] else ""
+
+                avg_difficulty = round(sum(lvl['difficulty'] for lvl in levels) / total)
+                stars = f"{EMOJIS['star']}{min(10, avg_difficulty)}"
+
+                coins = f"{EMOJIS['goldcoin']}{(1 if pdata['difficulty'] < 10 else 2)}"
+
+                description += (
+                    f"`ID {pid}:`\n{EMOJIS[DIFFICULTIES[pdata['difficulty']-1]]} {pdata['name']} "
+                    f"({completed}/{total}) {check}\n{TAB*2}{stars} {coins}\n\n"
+                )
+
+            embed.description = description
+            await ctx.send(embed=embed)

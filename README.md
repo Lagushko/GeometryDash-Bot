@@ -29,7 +29,7 @@ project/
 │   ├── levels.db        # Saved levels
 │   └── settings.db      # Global bot data
 │
-├── manual/             # Manual DB tools (not required for bot to run)
+├── manual/              # Manual DB tools (not required for bot to run)
 │   └── ...              # Admin scripts for manual data management
 │
 ├── .env                 # Secret bot data
@@ -44,7 +44,7 @@ Run `!help` in Discord to see all available commands.
 
 ### Basic Commands:
 
-* `!help`, `!profile`, `!leaderboards`, `!visual`
+* `!help`, `!link`, `!profile`, `!leaderboards`, `!visual`
 
 ### Levels:
 
@@ -56,7 +56,7 @@ Run `!help` in Discord to see all available commands.
 
 ### Bonuses:
 
-* `!daily`, `!weekly`, `!reward`
+* `!map-pack`, `!daily`, `!weekly`, `!reward`
 
 ### Icon Shop:
 
@@ -68,7 +68,7 @@ Run `!help` in Discord to see all available commands.
 
 ### Admin Only:
 
-* `!add-level`, `!delete-user`, `!delete-level`, `!cheats`, `!manage`
+* `!add-level`, `!add-mappack`, `!delete-user`, `!delete-level`, `!delete-sent`, `!cheats`, `!manage`
 
 ### Bot Control:
 
@@ -91,7 +91,7 @@ Run `!help` in Discord to see all available commands.
    PUBLIC_KEY=your_public_key
    TOKEN_BOT=your_bot_token
    BOT_URL=your_bot_url
-   OWNER=your_discord_uid
+   OWNER=your_discord_account_id
    ```
 
 3. Launch the bot:
@@ -116,14 +116,23 @@ Run `!help` in Discord to see all available commands.
 
 ## 👤 Author
 
-**lyagushkeee6400** — development, logic, commands, administration
+**lagushkeee6400** — development, logic, commands, administration
+
+## 🧱 Development
+
+* `2800+` lines of code
+* `40+` hours of work
+
+## ✨ Socials
+
+* [YouTube](https://www.youtube.com/@iSlimEkGD)
+* [GitHub](https://github.com/Lagushko)
+* [Email](https://mail.google.com/mail/?view=cm&fs=1&to=lyagushkeee@gmail.com)
 
 ---
 
-🕹️ Ready to play? Just type:
-
-```
-!play <id>
-```
-
 🎮 Have fun!
+
+---
+
+_© Geometry Dash discord-bot 2025_

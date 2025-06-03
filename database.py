@@ -23,14 +23,15 @@ class UserDatabase:
                     creatorpoints INTEGER DEFAULT 0,
                     orbs INTEGER DEFAULT 0,
                     played TEXT DEFAULT '{}',
-                    icons TEXT DEFAULT "[0,0,0,0,0,0,0]",
+                    icons TEXT DEFAULT '[0,0,0,0,0,0,0]',
                     last_send_time INTEGER DEFAULT 0,
-                    last_reward_time INTEGER DEFAULT 0,
-                    notification TEXT DEFAULT "",
+                    last_reward_time TEXT DEFAULT '[0,0]',
+                    notification TEXT DEFAULT '',
                     hardest TEXT DEFAULT '[1,1]',
                     purchased TEXT DEFAULT "[]",
                     visuals TEXT DEFAULT "[0,0]",
-                    creations TEXT DEFAULT "[]"
+                    creations TEXT DEFAULT "[]",
+                    collected TEXT DEFAULT "[]"
                 )
             """)
             conn.commit()
@@ -61,17 +62,18 @@ class UserDatabase:
                     "played": json.loads(row[8]) if row[8] else {},
                     "icons": json.loads(row[9]) if row[9] else [],
                     "last_send_time": row[10],
-                    "last_reward_time": row[11],
+                    "last_reward_time": json.loads(row[11]) if row[11] else [],
                     "notification": row[12],
                     "hardest": json.loads(row[13]) if row[13] else [],
                     "purchased": json.loads(row[14]) if row[14] else [],
                     "visuals": json.loads(row[15]) if row[15] else [],
-                    "creations": json.loads(row[16]) if row[16] else []
+                    "creations": json.loads(row[16]) if row[16] else [],
+                    "collected": json.loads(row[17]) if row[17] else []
                 }
             return None
 
     def update_field(self, user_id: int, field: str, value):
-        if field in ["played", "icons", "hardest", "purchased", "visuals", "creations"]:
+        if field in ["played", "icons", "hardest", "purchased", "visuals", "creations", "last_reward_time", "collected"]:
             value = json.dumps(value)
         with self._connect() as conn:
             cursor = conn.cursor()

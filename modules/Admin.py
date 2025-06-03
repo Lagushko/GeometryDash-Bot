@@ -63,6 +63,56 @@ async def add_level(ctx, level_id: str, name: str, difficulty: int, downloads: i
 
         await ctx.send(f"✅ Level `{name}` ID: {level_id} successfully added!\n🎖️ Creator <@{sender}> has now `{user_data['creatorpoints']}` Creator Points!")
 
+async def add_mappack(ctx, pack_id: int, name: str, difficulty: int, levels: str):
+    admins = botDB.get("admins") or []
+    moderators = botDB.get("moderators") or []
+    if ctx.author.id in (admins + Config.OWNER + moderators):
+        try:
+            levels = list(map(lambda x: [str(x), levelDB.get(str(x))['name']][0], levels.split(",")))
+        except:
+            await ctx.send(f"❌ Incorrect map pack levels data. Try id,id,id without spaces or check the existence of levels.")
+            return
+        
+        name = name.replace("-", " ").replace("\\", "")
+        name = discord.utils.escape_markdown(name)
+        
+        map_packs = botDB.get("mappacks")
+        map_packs[pack_id] = {"name": name, "difficulty": difficulty, "levels": levels}
+
+        botDB.update_field("mappacks", map_packs)
+
+        string_levels = list(map(lambda x: levelDB.get(str(x))["name"], levels))
+
+        if ctx.author.id != Config.OWNER[0]:
+            owner_user = await bot.fetch_user(Config.OWNER[0])
+            embed = discord.Embed(
+                title=f"{get_difficulty_visual(ctx.author.id, difficulty)} New Map Pack Added",
+                color=discord.Color.orange()
+            )
+
+            if ctx.author.id in admins:
+                role = "Admin"
+                emoji = EMOJIS['admin']
+            elif ctx.author.id in moderators:
+                role = "Moderator"
+                emoji = EMOJIS['moderator']
+            else:
+                role = "Unknown"
+                emoji = "❔"
+
+            embed.add_field(name=f"{emoji} {role}", value=f"{ctx.author.mention} (`{ctx.author.id}`)", inline=False)
+            embed.add_field(name="✅ Map pack Name", value=f"`{name}`", inline=False)
+            embed.add_field(name="🆔 Map pack ID", value=f"`{pack_id}`", inline=True)
+            embed.add_field(name="🎮 Levels", value=f"`{"`\n`".join(string_levels)}`", inline=False)
+            embed.set_footer(text="You might want to verify the content or validity of this map pack.")
+
+            try:
+                await owner_user.send(embed=embed)
+            except discord.Forbidden:
+                await ctx.send("⚠️ Could not DM the owner (they might have DMs disabled).")
+
+        await ctx.send(f"✅ Map pack `{name}` ID: {pack_id} with levels `{", ".join(string_levels)}` successfully added!")
+
 async def delete_user(ctx, user_id: int):
     admins = botDB.get("admins") or []
     moderators = botDB.get("moderators") or []

@@ -2,83 +2,51 @@ from .__utils__ import *
 from bot import bot
 
 async def help(ctx):
-    """
-`!command` — Text
-    """
-
-    embed = discord.Embed(
+    main_embed = discord.Embed(
         title=f"{EMOJIS['demon']} Welcome to Geometry Dash Bot! {EMOJIS['demon']}",
-        description=f"This is a **Geometry Dash simulation bot**! {EMOJIS['like']} Play, collect stars, unlock icons, and compete with others!",
+        description=(
+            f"This is a **Geometry Dash simulation bot**! {EMOJIS['like']} Play, collect stars, unlock icons, and compete with others!\n\n"
+            "**React with an emoji to view a help section:**\n" +
+            "\n".join([f"{emoji} — {data['title']}" for emoji, data in HELP_SECTIONS.items()
+                      if 'condition' not in data or data['condition'](ctx)])
+        ),
         color=discord.Color.blue()
     )
+    main_embed.set_footer(text="🕹️ Bot by lagushkeee6400 • Type !play <id> to start playing!")
 
-    embed.add_field(name="📖 Basic Commands", value="""
-`!help` — Show this help message
-`!link` — Link to add bot to your server
-`!profile [@player]` — Show your or another player's profile  
-`!leaderboards <global/local>` — View global or server-only leaderboards
-`!visual <extremes/defaults> <on/off>` — Enable or disable additional visuals (disabled all on standard)
-""", inline=False)
-    
-    embed.add_field(name="🎮 Levels", value="""
-`!main` — View main and official game levels  
-`!search <#/name/id> [difficulty]` — Search for a level, # is without name filter, difficulty without space 
-`!recent` — View recent added 25 levels
-`!creator <@player>` — View all levels submitted by user
-""", inline=False)
+    msg = await ctx.send(embed=main_embed)
 
-    embed.add_field(name="👍 Interaction", value="""
-`!join <id>` — Join a level (optional)
-`!quit` — Leave the level (optional)
-`!play [id]` — Play the joined level, write an ID if you haven't joined anything
-`!like <id>` — Like a level (you must play it at least once)  
-`!dislike <id>` — Dislike a level (same rule applies)  
-""", inline=False)
+    for emoji in HELP_SECTIONS.keys():
+        if 'condition' not in HELP_SECTIONS[emoji] or HELP_SECTIONS[emoji]['condition'](ctx):
+            await msg.add_reaction(emoji)
 
-    embed.add_field(name="⏳ Bonuses", value=f"""
-`!daily` — View the daily level  
-`!weekly` — View the weekly level  
-`!reward` — Claim your daily reward: {EMOJIS['manaorbs']} 100 mana orbs  
-""", inline=False)
+    def check(reaction, user):
+        return user == ctx.author and str(reaction.emoji) in HELP_SECTIONS and reaction.message.id == msg.id
 
-    embed.add_field(name="🛒 Icon Shop", value="""
-`!shop` — View available icons  
-`!buy <id>` — Buy an icon  
-`!equip <id>` — Equip an icon  
-""", inline=False)
-    
-    if ctx.author.id not in permission(1):
-        submissions = f"""
-`!send <id>` — Submit a real Geometry Dash level for review (you can earn creator points!) {EMOJIS['creatorpoints']}
-"""
-    else:
-        submissions = f"""
-`!send <id>` — Submit a real Geometry Dash level for review (unlimited use for helpers+) {EMOJIS['creatorpoints']}
-`!sent-list` — View a list of sent levels that aren't added
-"""
-    embed.add_field(name="📤 Submissions", value=submissions, inline=False)
+    while True:
+        try:
+            reaction, user = await bot.wait_for("reaction_add", timeout=60.0, check=check)
+            await msg.remove_reaction(reaction.emoji, user)
 
-    if ctx.author.id in permission(2):
-        embed.add_field(name="🔧 Admin Only", value="""
-`!add-level <id> <name> <difficulty> <downloads> <likes> <time> <sender>` — Add a level to the bot's database (replace space with - in name)
-`!delete-user <id>` — Delete a user's data from the bot  
-`!delete-level <id>` — Delete a levels's data from the bot  
-`!delete-sent <id>` — Delete a level ID that was sent on review
-`!cheats <noclip/speedhack/icons> <on/off>` — Toggle cheat modes
-`!manage <user/level> <id> <field> <data>` — Manages database's data
-""", inline=False)
-        
-    if ctx.author.id in permission(4):
-        embed.add_field(name="🔒 Bot Control", value="""
-`!update-db <users/levels> <field> <default> <type>` — Updates and adds new field to old database's tables
-`!set-db <users/levels> <field> <value>` — Sets a value in field for all database's datas
-`!role <role> <add/remove> <id>` — Controls user's permissions role
-`!data <name> <default> <type>` — Adds new bot data field to database
-""", inline=False)
+            section = HELP_SECTIONS[str(reaction.emoji)]
+            content = section['content'](ctx) if callable(section['content']) else section['content']
+            new_embed = discord.Embed(
+                title=f"{EMOJIS['demon']} Welcome to Geometry Dash Bot! {EMOJIS['demon']}",
+                description=(
+                    f"This is a **Geometry Dash simulation bot**! {EMOJIS['like']} Play, collect stars, unlock icons, and compete with others!\n\n"
+                    f"**{str(reaction.emoji)} {section['title']}:** {content}\n"
+                    "**React with an emoji to view a help section:**\n" +
+                    "\n".join([f"{emoji} — {data['title']}" for emoji, data in HELP_SECTIONS.items()
+                            if 'condition' not in data or data['condition'](ctx)])
+                ),
+                color=discord.Color.blue()
+            )
+            new_embed.set_footer(text="🕹️ Bot by lagushkeee6400 • Type !play <id> to start playing!")
 
-    embed.set_footer(text="🕹️ Bot by lyagushkeee6400 • Type !play <id> to start playing!")
+            await msg.edit(embed=new_embed)
 
-    await ctx.send(embed=embed)
+        except asyncio.TimeoutError:
+            break
 
 async def link(ctx):
     embed = discord.Embed(

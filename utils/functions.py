@@ -180,3 +180,84 @@ def get_ranking(top):
     if top <= 20: return 5
     if top <= 100: return 6
     return 7
+
+HELP_SECTIONS = {
+    "📖": {
+        "title": "Basic Commands",
+        "content": """
+`!help` — Show this help message  
+`!link` — Link to add bot to your server  
+`!profile [@player]` — Show your or another player's profile  
+`!leaderboards <global/local>` — View global or server-only leaderboards  
+`!visual <extremes/defaults> <on/off>` — Enable or disable additional visuals  
+"""
+    },
+    "🎮": {
+        "title": "Levels",
+        "content": """
+`!main` — View main and official game levels  
+`!search <#/name/id> [difficulty]` — Search for a level  
+`!recent` — View recent added 25 levels  
+`!creator <@player>` — View all levels submitted by user  
+"""
+    },
+    "👍": {
+        "title": "Interaction",
+        "content": """
+`!join <id>` — Join a level  
+`!quit` — Leave the level  
+`!play [id]` — Play the joined level or specific one  
+`!like <id>` — Like a level (must be played)  
+`!dislike <id>` — Dislike a level (must be played)  
+"""
+    },
+    "⏳": {
+        "title": "Bonuses",
+        "content": """
+`!map-pack [id] [collect]` — View all the map packs (id for specific map pack, collect to take rewards if completed) 
+`!daily` — View the daily level  
+`!weekly` — View the weekly level  
+`!reward` — Claim Large and Small chests (24h and 4h countdown)
+"""
+    },
+    "🛒": {
+        "title": "Icon Shop",
+        "content": """
+`!shop` — View available icons  
+`!buy <id>` — Buy an icon  
+`!equip <id>` — Equip an icon  
+"""
+    },
+    "📤": {
+        "title": "Submissions",
+        "content": lambda ctx: f"""
+`!send <id>` — Submit a Geometry Dash level for review {EMOJIS['creatorpoints']}
+""" if ctx.author.id not in permission(1) else f"""
+`!send <id>` — Submit a Geometry Dash level for review (unlimited use) {EMOJIS['creatorpoints']}  
+`!sent-list` — View a list of sent levels  
+"""
+    },
+    "🔧": {
+        "title": "Admin Only",
+        "condition": lambda ctx: ctx.author.id in permission(2),
+        "content": """
+`!add-level <id> <name> <difficulty> <downloads> <likes> <time> <sender>` — Add a level  
+`!add-mappack <id> <name> <difficulty> <listOfLevelIDs>` — Add a map pack
+`!delete-user <id>` — Delete a user's data  
+`!delete-level <id>` — Delete a level's data  
+`!delete-sent <id>` — Delete a sent level  
+`!cheats <noclip/speedhack/icons> <on/off>` — Toggle cheat modes  
+`!manage <user/level> <id> <field> <data>` — Edit database values  
+"""
+    },
+    "🔒": {
+        "title": "Bot Control",
+        "condition": lambda ctx: ctx.author.id in permission(4),
+        "content": """
+`!update-db <users/levels> <field> <default> <type>` — Add a new field  
+`!set-db <users/levels> <field> <value>` — Set value in all entries  
+`!role <role> <add/remove> <id>` — Change permissions  
+`!data <name> <default> <type>` — Add global bot setting  
+"""
+    }
+}

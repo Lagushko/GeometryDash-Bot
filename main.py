@@ -48,6 +48,7 @@ bot.command(name='like')(Interaction.like)
 bot.command(name='dislike')(Interaction.dislike)
 
 # --------- BONUSES --------- #
+bot.command(name='map-pack')(Bonuses.map_pack)
 bot.command(name='daily')(Bonuses.daily)
 bot.command(name='weekly')(Bonuses.weekly)
 bot.command(name='reward')(Bonuses.reward)
@@ -63,6 +64,7 @@ bot.command(name='sent-list')(Submissions.sent_list)
 
 # ------- ADMIN ONLY -------- #
 bot.command(name='add-level')(Admin.add_level)
+bot.command(name='add-mappack')(Admin.add_mappack)
 bot.command(name='delete-user')(Admin.delete_user)
 bot.command(name='delete-level')(Admin.delete_level)
 bot.command(name='delete-sent')(Admin.delete_sent)

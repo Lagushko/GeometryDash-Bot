@@ -222,7 +222,7 @@ async def map_pack(ctx, pack_id: str = None, collect: str = None):
 
         for level_data in levels:
             level_str = level_markdown(ctx.author.id, played, level_data)
-            field_text += level_str
+            field_text += level_str + "\n\n"
 
         embed = discord.Embed(
             title=f"📁 {data['name']}",

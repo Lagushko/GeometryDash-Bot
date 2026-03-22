@@ -78,9 +78,9 @@ def get_search_difficulties(user_id, name):
     else:
         names_to_check = [name]
 
-    for diff in names_to_check:
-        if diff in DIFFICULTIES:
-            result.append(DIFFICULTIES.index(diff) + 1)
+    for i, diff in enumerate(DIFFICULTIES):
+        if diff in names_to_check:
+            result.append(i + 1)
 
     return result
 
@@ -163,7 +163,7 @@ LM: 1.0000, \
 
         expected_attempts = base_attempts(level_difficulty)
         difficulty_difference = max_user_difficulty - level_difficulty
-        skill_factor = max(0.1, 1 - 0.15 * difficulty_difference - 0.05 * levels_at_max_difficulty)
+        skill_factor = max(0.01, 1 - 0.15 * difficulty_difference - 0.05 * levels_at_max_difficulty)
         adjusted_attempts = max(1, expected_attempts * skill_factor)
 
         length_multiplier = 2 / (1 + length / 90)

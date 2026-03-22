@@ -1,17 +1,24 @@
-from database import userDB
+from database import *
 
-# правильные ID
-id1 = 1374624035693920318
-id2 = 739123605538996285
+# какие паки удалить
+REMOVE_PACKS = {"66", "74"}
 
-# --- 1 ---
-userDB.update_field(id1, "last_reward_time", [0, 0])
+map_packs = botDB.get("mappacks") or {}
 
-# --- 2 ---
-data = userDB.get(id2)
-creations = data.get("creations", [])
-creations = [int(x) for x in creations]
+removed = 0
+not_found = 0
 
-userDB.update_field(id2, "creations", creations)
+for pack_id in REMOVE_PACKS:
+    if pack_id in map_packs:
+        del map_packs[pack_id]
+        print(f"🗑️ Removed pack {pack_id}")
+        removed += 1
+    else:
+        print(f"⚠️ Pack {pack_id} not found")
+        not_found += 1
 
-print("✅ Done")
+botDB.update_field("mappacks", map_packs)
+
+print("\n✅ Done")
+print(f"Removed: {removed}")
+print(f"Not found: {not_found}")

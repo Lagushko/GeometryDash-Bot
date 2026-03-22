@@ -267,7 +267,7 @@ async def visual(ctx, visual_type: str, state: str):
         visuals[0] = 1 if state == "on" else 0
         message = f"🎨 Extremes visuals have been turned **{'ON' if visuals[0] else 'OFF'}**."
         if visuals[0]:
-            example = " ".join(EMOJIS[DIFFICULTIES[i]] for i in range(13, 20))
+            example = " ".join(EMOJIS[DIFFICULTIES[i]] for i in [13, 15, 17, 19, 21, 24, 27])
             message += f"\n✨ Example: {example}"
     elif visual_type.lower() == "defaults":
         visuals[1] = 1 if state == "on" else 0

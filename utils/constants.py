@@ -8,8 +8,9 @@ PRICES = [["orbs", 0], ["orbs", 500], ["orbs", 1000], ["orbs", 1500], ["orbs", 2
 
 DIFFICULTIES = ["auto", "easy", "normal", "casual", "hard", "harder", "tough", "insane", "cruel", 
                 "easydemon", "mediumdemon", "harddemon", "insanedemon", "extremedemon",
-                "supremedemon", "ultimatedemon", "legendarydemon", 
-                "mythicaldemon", "infinitedemon", "grandpademon"]
+                "extremedemon", "supremedemon", "supremedemon", "ultimatedemon", "ultimatedemon", 
+                "legendarydemon", "legendarydemon", "mythicaldemon", "mythicaldemon", "mythicaldemon",
+                "infinitedemon", "infinitedemon", "infinitedemon", "grandpademon"] + ["grandpademon"] * 20
 ORBS = [0, 50, 75, 125, 175, 225, 275, 350, 425, 500]
 DIAMONDS = [0, 3, 5, 6, 7, 8, 9, 10, 11, 12]
 

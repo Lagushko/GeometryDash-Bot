@@ -5,12 +5,13 @@ from .constants import *
 from .config import *
 
 def permission(level: int):
-    helpers, moderators, admins, owner = [], [], [], []
+    helpers, moderators, admins, devs, owner = [], [], [], [], []
     if level <= 1: helpers = botDB.get('helpers') or []
     if level <= 2: moderators = botDB.get('moderators') or []
     if level <= 3: admins = botDB.get('admins') or []
-    if level <= 4: owner = Config.OWNER
-    return helpers + moderators + admins + owner
+    if level <= 4: devs = botDB.get('devs') or []
+    if level <= 5: owner = Config.OWNER
+    return helpers + moderators + admins + devs + owner
 
 def get_difficulty_visual(user_id, difficulty):
     user_data = userDB.get(user_id)
@@ -90,7 +91,43 @@ def level_time(seconds):
     if seconds < 120: return "Long"
     return "XL"
 
-def predict_level_completion(level, user):
+def level_markdown(user_id, played, level_data, remove_details=False, enum=None, custom_id=None):
+    emoji_difficulty = get_difficulty_visual(user_id, level_data['difficulty'])
+
+    stars = min(level_data["difficulty"], 10)
+    mana = ORBS[stars - 1] if stars > 0 else 0
+    rate_emoji = EMOJIS['like'] if level_data['likes'] >= 0 else EMOJIS['dislike']
+
+    record = played.get(level_data['level_id'], {}).get('record')
+    if record == 100:
+        user_progress = EMOJIS['checkmark']
+    elif record is not None:
+        user_progress = f"`{record}%`"
+    else:
+        user_progress = ""
+
+    coin_total = level_data['coins']
+    coin_data = played.get(level_data['level_id'], {}).get('coins', [0] * coin_total)
+    level_coins = "".join(EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in coin_data) + " " if coin_total else " "
+
+    display_id = custom_id if custom_id is not None else level_data['level_id']
+    id_text = f"`#{enum} | ID {display_id}:`\n" if enum else f"`ID {display_id}:`\n"
+
+    text = (
+        id_text +
+        f"{emoji_difficulty} {level_data['name']} {level_coins}{user_progress}\n"
+        f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}\n"
+    )
+
+    if not remove_details:
+        text += (
+            f"{TAB*2}{EMOJIS['download']}{level_data['downloads']} "
+            f"{rate_emoji}{level_data['likes']} {EMOJIS['time']}{level_time(level_data['time'])}"
+        )
+
+    return text
+
+def predict_level_completion(level, user, nickname=None):
     final_result = 0
 
     level_difficulty = level['difficulty']
@@ -105,8 +142,21 @@ def predict_level_completion(level, user):
     record = played_data['record']
     length = level['time']
 
+    display_name = nickname or user['user_id']
+
     if level_difficulty == 1:
         final_result = 100
+
+        print(f"\
+{colorama.Fore.YELLOW}WP: 1.0000, {colorama.Style.RESET_ALL}\
+FM: 1.0000, \
+AM: 1.0000, \
+LM: 1.0000, \
+{colorama.Fore.CYAN}FWP: 1.0000, \
+{colorama.Fore.CYAN}FRP: 100, \
+{colorama.Fore.GREEN}AA: 1 {colorama.Style.RESET_ALL}\
+[{display_name}] [{level['name']}]"
+        )
     else:
         def base_attempts(difficulty):
             return 0.14105 * difficulty**4 - 3.65008 * difficulty**3 + 39.1527 * difficulty**2 - 149.3046 * difficulty + 199.5352
@@ -120,7 +170,7 @@ def predict_level_completion(level, user):
         average_atts = int(adjusted_attempts * random.uniform(1.35, 1.65) * length_multiplier)
 
         win_probability = 1 / (adjusted_attempts * 0.5 + 1)
-        fluke_multiplier = max(0.01, record / 100.0)
+        fluke_multiplier = max(0.01, record / 100.0) + 0.5 * (1 - record / 100.0) * (attempts / (adjusted_attempts + attempts))
 
         attempts_multiplier = 1.0
         if average_atts > 0:
@@ -139,27 +189,47 @@ def predict_level_completion(level, user):
 
             roll = random.random()
             max_possible = min(max_theoretical_record, int(40 + attempts * 0.5 + record * 0.5))
-            progress_chance = (1 - win_probability * attempts_multiplier * 10)
+            
+            raw_progress_chance = 0.3 + (1 - win_probability) * 0.7
+            progress_chance = max(0.1, min(0.9, raw_progress_chance))
 
-            if roll < progress_chance * 0.6 and record > 1:
+            difficulty_gap = max(0, level_difficulty - max_user_difficulty)
+            min_first_progress = max(1, int(8 - difficulty_gap * 2)) if difficulty_gap <= 1 else 1
+
+            if record > 1 and roll < progress_chance * 0.6:
                 percent = max(1, int(record * random.uniform(0.20, 0.60)))
             elif roll < progress_chance or (record >= 95 and random.random() <= 0.95):
                 percent = int(record * random.uniform(0.60, 1.00))
             else:
-                max_gain = max(1, int((max_possible - record) * 0.3))
-                percent = record + random.randint(1, max_gain)
+                if difficulty_gap == 0:
+                    gain_multiplier = 0.5
+                elif difficulty_gap == 1:
+                    gain_multiplier = 0.35
+                else:
+                    gain_multiplier = 0.25
+                max_gain = max(min_first_progress + 1, int((max_possible - record) * gain_multiplier))
+                percent = record + random.randint(min_first_progress, max_gain)
 
-            final_result =  max(1, min(percent, max_possible))
+            if record >= 95 and percent > record:
+                clutch_chance = (record - 94) * 0.01
+                if random.random() <= clutch_chance:
+                    percent = 100
 
-    print(f"\
+            if percent == 100:
+                final_result = 100
+            else:
+                final_result = max(1, min(percent, max_possible))
+
+        print(f"\
 {colorama.Fore.YELLOW}WP: {win_probability:.4f}, {colorama.Style.RESET_ALL}\
 FM: {fluke_multiplier:.4f}, \
 AM: {attempts_multiplier:.4f}, \
 LM: {length_multiplier:.4f}, \
 {colorama.Fore.CYAN}FWP: {final_win_probability:.4f}, \
 {colorama.Fore.CYAN}FRP: {final_result}, \
-{colorama.Fore.GREEN}AA: {average_atts} {colorama.Style.RESET_ALL}"
-    )
+{colorama.Fore.GREEN}AA: {average_atts} {colorama.Style.RESET_ALL}\
+[{display_name}] [{level['name']}]"
+        )
 
     return final_result
 
@@ -199,6 +269,7 @@ HELP_SECTIONS = {
 `!search <#/name/id> [difficulty]` — Search for a level  
 `!recent` — View recent added 25 levels  
 `!creator <@player>` — View all levels submitted by user  
+`!demonlist` — View list of the hardest extreme demons in bot
 """
     },
     "👍": {
@@ -240,19 +311,26 @@ HELP_SECTIONS = {
     "🔧": {
         "title": "Admin Only",
         "condition": lambda ctx: ctx.author.id in permission(2),
-        "content": """
-`!add-level <id> <name> <difficulty> <downloads> <likes> <time> <sender>` — Add a level  
+        "content": lambda ctx: (
+            """
+`!delete-user <id>` — Delete a user's data (you can delete only own)
+`!cheats <noclip/speedhack/icons> <on/off>` — Toggle cheat modes  
+`!manage <user/level/settings> <id/none> <field> <data>` — Edit database values (you can edit only own user data)
+""" if ctx.author.id in permission(4) and ctx.author.id not in permission(5) else """
+`!add-level <id> <name> <difficulty> <downloads> <likes> <time> <coins> <sender>` — Add a level  
 `!add-mappack <id> <name> <difficulty> <listOfLevelIDs>` — Add a map pack
-`!delete-user <id>` — Delete a user's data  
+`!delete-user <id>` — Delete a user's data
 `!delete-level <id>` — Delete a level's data  
 `!delete-sent <id>` — Delete a sent level  
+`!demonlist-pos <id> <position>` — Adds/moves the level to position on demonlist (pos 0 to delete)
 `!cheats <noclip/speedhack/icons> <on/off>` — Toggle cheat modes  
-`!manage <user/level> <id> <field> <data>` — Edit database values  
+`!manage <user/level/settings> <id/none> <field> <data>` — Edit database values  
 """
+        )
     },
     "🔒": {
         "title": "Bot Control",
-        "condition": lambda ctx: ctx.author.id in permission(4),
+        "condition": lambda ctx: ctx.author.id in permission(5),
         "content": """
 `!update-db <users/levels> <field> <default> <type>` — Add a new field  
 `!set-db <users/levels> <field> <value>` — Set value in all entries  

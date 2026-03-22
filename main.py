@@ -27,6 +27,7 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
+
 # ----- BASIC COMMANDS ------ #
 bot.command(name='help')(Basic.help)
 bot.command(name='link')(Basic.link)
@@ -39,6 +40,7 @@ bot.command(name='main')(Levels.main)
 bot.command(name='search')(Levels.search)
 bot.command(name='recent')(Levels.recent)
 bot.command(name='creator')(Levels.creator)
+bot.command(name='demonlist')(Levels.demonlist)
 
 # ------- INTERACTION ------- #
 bot.command(name='join')(Interaction.join)
@@ -68,6 +70,7 @@ bot.command(name='add-mappack')(Admin.add_mappack)
 bot.command(name='delete-user')(Admin.delete_user)
 bot.command(name='delete-level')(Admin.delete_level)
 bot.command(name='delete-sent')(Admin.delete_sent)
+bot.command(name='demonlist-pos')(Admin.demonlist_pos)
 bot.command(name='cheats')(Admin.cheats)
 bot.command(name='manage')(Admin.manage)
 

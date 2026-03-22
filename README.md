@@ -48,7 +48,7 @@ Run `!help` in Discord to see all available commands.
 
 ### Levels:
 
-* `!main`, `!search`, `!recent`, `!creator`
+* `!main`, `!search`, `!recent`, `!creator`, `!demonlist`
 
 ### Interaction:
 
@@ -68,7 +68,7 @@ Run `!help` in Discord to see all available commands.
 
 ### Admin Only:
 
-* `!add-level`, `!add-mappack`, `!delete-user`, `!delete-level`, `!delete-sent`, `!cheats`, `!manage`
+* `!add-level`, `!add-mappack`, `!delete-user`, `!delete-level`, `!delete-sent`, `!demonlist-pos`, `!cheats`, `!manage`
 
 ### Bot Control:
 
@@ -120,8 +120,8 @@ Run `!help` in Discord to see all available commands.
 
 ## 🧱 Development
 
-* `2800+` lines of code
-* `40+` hours of work
+* `3200+` lines of code
+* `50+` hours of work
 
 ## ✨ Socials
 
@@ -135,4 +135,4 @@ Run `!help` in Discord to see all available commands.
 
 ---
 
-_© Geometry Dash discord-bot 2025_
+_© Geometry Dash discord-bot 2026_

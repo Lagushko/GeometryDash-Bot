@@ -116,7 +116,8 @@ async def play(ctx, level_id: str = None):
     if noclip:
         percent = 100
     else:
-        percent = predict_level_completion(level, user_data)
+        nickname = ctx.author.display_name if ctx.author else f"User {user_id}"
+        percent = predict_level_completion(level, user_data, nickname=nickname)
 
     sim_time = max(round((level.get("time", 60) * (percent / 100)) / 10), 1)
 

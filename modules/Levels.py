@@ -10,29 +10,7 @@ async def main(ctx):
         if not data:
             continue
 
-        emoji_difficulty = get_difficulty_visual(user_id, data['difficulty'])
-
-        stars = min(data["difficulty"], 10)
-        mana = ORBS[stars - 1] if stars > 0 else 0
-
-        users_level_progress = (played[str(i)]['record']) if str(i) in played else ""
-        if users_level_progress == 100:
-            users_level_progress = EMOJIS['checkmark']
-        elif users_level_progress:
-            users_level_progress = f"`{str(users_level_progress)}%`"
-        else:
-            users_level_progress = ""
-
-        count_coins = (played[str(i)]['coins']) if str(i) in played else [0 for _ in range(data['coins'])]
-        level_coins = " "
-        if len(count_coins) > 0:
-            level_coins = "".join(EMOJIS['goldcoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
-
-        level_str = (
-            f"`ID {i}:`\n"
-            f"{emoji_difficulty} {data['name']} {level_coins}{users_level_progress}\n"
-            f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}"
-        )
+        level_str = level_markdown(user_id, played, data, remove_details=True)
         levels.append(level_str)
 
     pages = [levels[i:i+5] for i in range(0, len(levels), 5)]
@@ -54,24 +32,33 @@ async def main(ctx):
 
     message = await ctx.send(embed=create_embed(current))
 
+    await message.add_reaction("⏮")
     await message.add_reaction("⬅️")
     await message.add_reaction("➡️")
+    await message.add_reaction("⏭")
 
     def check(reaction, user):
         return (
             user == ctx.author and
             reaction.message.id == message.id and
-            str(reaction.emoji) in ["⬅️", "➡️"]
+            str(reaction.emoji) in ["⏮", "⬅️", "➡️", "⏭"]
         )
 
     while True:
         try:
             reaction, user = await bot.wait_for("reaction_add", timeout=60.0, check=check)
-            if str(reaction.emoji) == "⬅️" and current > 0:
+            emoji = str(reaction.emoji)
+            if emoji == "⏮" and current != 0:
+                current = 0
+                await message.edit(embed=create_embed(current))
+            elif emoji == "⬅️" and current > 0:
                 current -= 1
                 await message.edit(embed=create_embed(current))
-            elif str(reaction.emoji) == "➡️" and current < total_pages - 1:
+            elif emoji == "➡️" and current < total_pages - 1:
                 current += 1
+                await message.edit(embed=create_embed(current))
+            elif emoji == "⏭" and current != total_pages - 1:
+                current = total_pages - 1
                 await message.edit(embed=create_embed(current))
             await message.remove_reaction(reaction.emoji, user)
         except asyncio.TimeoutError:
@@ -173,31 +160,7 @@ async def search(ctx, *, args=None):
             "coins": row[6]
         }
 
-        emoji_difficulty = get_difficulty_visual(user_id, level_data['difficulty'])
-
-        stars = min(level_data["difficulty"], 10)
-        mana = ORBS[stars - 1] if stars > 0 else 0
-        rate_emoji = EMOJIS['like'] if level_data['likes'] >= 0 else EMOJIS['dislike']
-
-        users_level_data = (played[level_data['level_id']]['record']) if level_data['level_id'] in played else None
-        if users_level_data == 100:
-            users_level_data = EMOJIS['checkmark']
-        elif users_level_data:
-            users_level_data = f"`{str(users_level_data)}%`"
-        else:
-            users_level_data = ""
-        
-        count_coins = (played[level_data['level_id']]['coins']) if level_data['level_id'] in played else [0 for _ in range(level_data['coins'])]
-        level_coins = " "
-        if len(count_coins) > 0:
-            level_coins = "".join(EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
-
-        text = (
-            f"`ID {level_data['level_id']}:`\n"
-            f"{emoji_difficulty} {level_data['name']} {level_coins}{users_level_data}\n"
-            f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}\n"
-            f"{TAB*2}{EMOJIS['download']}{level_data['downloads']} {rate_emoji}{level_data['likes']} {EMOJIS['time']}{level_time(level_data['time'])}"
-        )
+        text = level_markdown(user_id, played, level_data)
         results.append(text)
 
     pages = [results[i:i + 5] for i in range(0, len(results), 5)]
@@ -217,20 +180,33 @@ async def search(ctx, *, args=None):
     if total_pages == 1:
         return
 
+    await message.add_reaction("⏮")
     await message.add_reaction("⬅️")
     await message.add_reaction("➡️")
+    await message.add_reaction("⏭")
 
     def check(reaction, user):
-        return user == ctx.author and reaction.message.id == message.id and str(reaction.emoji) in ["⬅️", "➡️"]
+        return (
+            user == ctx.author and
+            reaction.message.id == message.id and
+            str(reaction.emoji) in ["⏮", "⬅️", "➡️", "⏭"]
+        )
 
     while True:
         try:
             reaction, user = await bot.wait_for("reaction_add", timeout=60.0, check=check)
-            if str(reaction.emoji) == "⬅️" and current > 0:
+            emoji = str(reaction.emoji)
+            if emoji == "⏮" and current != 0:
+                current = 0
+                await message.edit(embed=create_embed(current))
+            elif emoji == "⬅️" and current > 0:
                 current -= 1
                 await message.edit(embed=create_embed(current))
-            elif str(reaction.emoji) == "➡️" and current < total_pages - 1:
+            elif emoji == "➡️" and current < total_pages - 1:
                 current += 1
+                await message.edit(embed=create_embed(current))
+            elif emoji == "⏭" and current != total_pages - 1:
+                current = total_pages - 1
                 await message.edit(embed=create_embed(current))
             await message.remove_reaction(reaction.emoji, user)
         except asyncio.TimeoutError:
@@ -253,31 +229,7 @@ async def recent(ctx):
         if not data:
             continue
 
-        emoji_difficulty = get_difficulty_visual(user_id, data['difficulty'])
-
-        stars = min(data["difficulty"], 10)
-        mana = ORBS[stars - 1] if stars > 0 else 0
-        rate_emoji = EMOJIS['like'] if data['likes'] >= 0 else EMOJIS['dislike']
-
-        users_level_progress = (played[level_id]['record']) if level_id in played else ""
-        if users_level_progress == 100:
-            users_level_progress = EMOJIS['checkmark']
-        elif users_level_progress:
-            users_level_progress = f"{str(users_level_progress)}%"
-        else:
-            users_level_progress = ""
-
-        count_coins = (played[level_id]['coins']) if level_id in played else [0 for _ in range(data['coins'])]
-        level_coins = " "
-        if len(count_coins) > 0:
-            level_coins = "".join(EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
-
-        level_str = (
-            f"`ID {level_id}:`\n"
-            f"{emoji_difficulty} {data['name']} {level_coins}{users_level_progress}\n"
-            f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}\n"
-            f"{TAB*2}{EMOJIS['download']}{data['downloads']} {rate_emoji}{data['likes']} {EMOJIS['time']}{level_time(data['time'])}"
-        )
+        level_str = level_markdown(user_id, played, data)
         levels.append(level_str)
 
     pages = [levels[i:i+5] for i in range(0, len(levels), 5)]
@@ -299,24 +251,33 @@ async def recent(ctx):
 
     message = await ctx.send(embed=create_embed(current))
 
+    await message.add_reaction("⏮")
     await message.add_reaction("⬅️")
     await message.add_reaction("➡️")
+    await message.add_reaction("⏭")
 
     def check(reaction, user):
         return (
             user == ctx.author and
             reaction.message.id == message.id and
-            str(reaction.emoji) in ["⬅️", "➡️"]
+            str(reaction.emoji) in ["⏮", "⬅️", "➡️", "⏭"]
         )
 
     while True:
         try:
             reaction, user = await bot.wait_for("reaction_add", timeout=60.0, check=check)
-            if str(reaction.emoji) == "⬅️" and current > 0:
+            emoji = str(reaction.emoji)
+            if emoji == "⏮" and current != 0:
+                current = 0
+                await message.edit(embed=create_embed(current))
+            elif emoji == "⬅️" and current > 0:
                 current -= 1
                 await message.edit(embed=create_embed(current))
-            elif str(reaction.emoji) == "➡️" and current < total_pages - 1:
+            elif emoji == "➡️" and current < total_pages - 1:
                 current += 1
+                await message.edit(embed=create_embed(current))
+            elif emoji == "⏭" and current != total_pages - 1:
+                current = total_pages - 1
                 await message.edit(embed=create_embed(current))
             await message.remove_reaction(reaction.emoji, user)
         except asyncio.TimeoutError:
@@ -337,6 +298,8 @@ async def creator(ctx, member: discord.Member):
 
     creation_ids.reverse()
 
+    played = userDB.get(ctx.author.id).get('played', {})
+
     levels = []
     for i, level_id in enumerate(creation_ids, start=1):
         if level_id in MAIN_LEVELS:
@@ -346,32 +309,7 @@ async def creator(ctx, member: discord.Member):
         if not data:
             continue
 
-        emoji_difficulty = get_difficulty_visual(ctx.author.id, data['difficulty'])
-
-        stars = min(data["difficulty"], 10)
-        mana = ORBS[stars - 1] if stars > 0 else 0
-        rate_emoji = EMOJIS['like'] if data['likes'] >= 0 else EMOJIS['dislike']
-
-        played = userDB.get(ctx.author.id).get('played', {})
-        users_level_progress = (played[level_id]['record']) if level_id in played else ""
-        if users_level_progress == 100:
-            users_level_progress = EMOJIS['checkmark']
-        elif users_level_progress:
-            users_level_progress = f"{str(users_level_progress)}%"
-        else:
-            users_level_progress = ""
-
-        count_coins = (played[level_id]['coins']) if level_id in played else [0 for _ in range(data['coins'])]
-        level_coins = " "
-        if len(count_coins) > 0:
-            level_coins = "".join(EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
-
-        level_str = (
-            f"`ID {level_id}:`\n"
-            f"{emoji_difficulty} {data['name']} {level_coins}{users_level_progress}\n"
-            f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['manaorbs']}{mana}\n"
-            f"{TAB*2}{EMOJIS['download']}{data['downloads']} {rate_emoji}{data['likes']} {EMOJIS['time']}{level_time(data['time'])}"
-        )
+        level_str = level_markdown(ctx.author.id, played, data)
         levels.append(level_str)
 
     pages = [levels[i:i+5] for i in range(0, len(levels), 5)]
@@ -393,24 +331,123 @@ async def creator(ctx, member: discord.Member):
 
     message = await ctx.send(embed=create_embed(current))
 
+    await message.add_reaction("⏮")
     await message.add_reaction("⬅️")
     await message.add_reaction("➡️")
+    await message.add_reaction("⏭")
 
     def check(reaction, user):
         return (
             user == ctx.author and
             reaction.message.id == message.id and
-            str(reaction.emoji) in ["⬅️", "➡️"]
+            str(reaction.emoji) in ["⏮", "⬅️", "➡️", "⏭"]
         )
 
     while True:
         try:
             reaction, user = await bot.wait_for("reaction_add", timeout=60.0, check=check)
-            if str(reaction.emoji) == "⬅️" and current > 0:
+            emoji = str(reaction.emoji)
+            if emoji == "⏮" and current != 0:
+                current = 0
+                await message.edit(embed=create_embed(current))
+            elif emoji == "⬅️" and current > 0:
                 current -= 1
                 await message.edit(embed=create_embed(current))
-            elif str(reaction.emoji) == "➡️" and current < total_pages - 1:
+            elif emoji == "➡️" and current < total_pages - 1:
                 current += 1
+                await message.edit(embed=create_embed(current))
+            elif emoji == "⏭" and current != total_pages - 1:
+                current = total_pages - 1
+                await message.edit(embed=create_embed(current))
+            await message.remove_reaction(reaction.emoji, user)
+        except asyncio.TimeoutError:
+            break
+
+async def demonlist(ctx):
+    user_id = ctx.author.id
+    played = userDB.get(user_id)['played']
+
+    admins = botDB.get("admins") or []
+    moderators = botDB.get("moderators") or []
+    show_aredl = user_id in (admins + Config.OWNER + moderators)
+
+    aredl_list = []
+    if show_aredl:
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.aredl.net/v2/api/aredl/levels") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    aredl_list = [str(level["level_id"]) for level in data if "level_id" in level]
+
+    demonlist_ids = botDB.get("demonlist") or []
+
+    if not demonlist_ids:
+        await ctx.send("📭 No levels in the demonlist.")
+        return
+
+    levels = []
+    for i, level_id in enumerate(demonlist_ids, start=1):
+        data = levelDB.get(level_id)
+        if not data:
+            continue
+
+        level_str = level_markdown(user_id, played, data, enum=i)
+
+        if show_aredl:
+            try:
+                aredl_pos = aredl_list.index(level_id) + 1
+                level_str = f"`#{aredl_pos} AREDL`\n" + level_str
+            except:
+                None
+
+        levels.append(level_str)
+
+    pages = [levels[i:i+5] for i in range(0, len(levels), 5)]
+    total_pages = len(pages)
+    if total_pages == 0:
+        await ctx.send("❌ No valid demonlist levels found.")
+        return
+
+    current = 0
+
+    def create_embed(index):
+        embed = discord.Embed(
+            title=f"{EMOJIS['extremedemon']} Demon List",
+            description="\n\n".join(pages[index]),
+            color=discord.Color.red()
+        )
+        embed.set_footer(text=f"Page {index + 1}/{total_pages}")
+        return embed
+
+    message = await ctx.send(embed=create_embed(current))
+
+    await message.add_reaction("⏮")
+    await message.add_reaction("⬅️")
+    await message.add_reaction("➡️")
+    await message.add_reaction("⏭")
+
+    def check(reaction, user):
+        return (
+            user == ctx.author and
+            reaction.message.id == message.id and
+            str(reaction.emoji) in ["⏮", "⬅️", "➡️", "⏭"]
+        )
+
+    while True:
+        try:
+            reaction, user = await bot.wait_for("reaction_add", timeout=60.0, check=check)
+            emoji = str(reaction.emoji)
+            if emoji == "⏮" and current != 0:
+                current = 0
+                await message.edit(embed=create_embed(current))
+            elif emoji == "⬅️" and current > 0:
+                current -= 1
+                await message.edit(embed=create_embed(current))
+            elif emoji == "➡️" and current < total_pages - 1:
+                current += 1
+                await message.edit(embed=create_embed(current))
+            elif emoji == "⏭" and current != total_pages - 1:
+                current = total_pages - 1
                 await message.edit(embed=create_embed(current))
             await message.remove_reaction(reaction.emoji, user)
         except asyncio.TimeoutError:

@@ -27,9 +27,11 @@ async def daily(ctx):
                 min_diff <= difficulty <= max_diff
                 and level_id not in MAIN_LEVELS
                 and level_id != current_id
+                and level_id != key
             ):
                 level = levelDB.get(level_id)
                 if level:
+                    levelDB.fix_duplicates(key)
                     levelDB.add("daily", level["name"], level["difficulty"], level["downloads"], level["likes"], level["time"], level["coins"], level["sender"])
                     botDB.update_field(key, [level_id, now])
                     current_id = level_id
@@ -42,46 +44,26 @@ async def daily(ctx):
     if not level:
         await ctx.send("❌ Failed to load daily level.")
         return
-
-    emoji = get_difficulty_visual(ctx.author.id, level['difficulty'])
-    stars = min(level["difficulty"], 10)
-    mana = ORBS[stars - 1] if stars > 0 else 0
-    diamonds = DIAMONDS[stars - 1] if stars > 0 else 0
-    rate_emoji = EMOJIS['like'] if level['likes'] >= 0 else EMOJIS['dislike']
-
-    played = userDB.get(ctx.author.id)['played']
-    level_cid = key + str(current_id)
-
-    users_level_data = (played[level_cid]['record']) if level_cid in played else None
-    if users_level_data == 100:
-        users_level_data = EMOJIS['checkmark']
-    elif users_level_data:
-        users_level_data = f"`{str(users_level_data)}%`"
-    else:
-        users_level_data = ""
     
-    count_coins = (played[level_cid]['coins']) if level_cid in played else [0 for _ in range(level['coins'])]
-    level_coins = " "
-    if len(count_coins) > 0:
-        level_coins = "".join(EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
+    played = userDB.get(ctx.author.id)['played']
+
+    level_cid = key + str(current_id)
+    level['level_id'] = level_cid
+
+    level_str = level_markdown(ctx.author.id, played, level, custom_id="daily")
 
     embed = discord.Embed(
         title="📅 Daily Level",
         color=discord.Color.orange()
     )
-    embed.description = (
-        f"`ID {key}:`\n"
-        f"{emoji} {level['name']} {level_coins}{users_level_data}\n"
-        f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['diamond']}{diamonds} {EMOJIS['manaorbs']}{mana}\n"
-        f"{TAB*2}{EMOJIS['download']}{level['downloads']} {rate_emoji}{level['likes']} {EMOJIS['time']}{level_time(level['time'])}"
-    )
+    embed.description = level_str
 
     await ctx.send(embed=embed)
 
 async def weekly(ctx):
     key = "weekly"
     min_diff = 10
-    max_diff = 13
+    max_diff = 12
 
     weekly_data = botDB.get(key)
     current_id = weekly_data[0] if weekly_data and len(weekly_data) > 0 else None
@@ -103,9 +85,11 @@ async def weekly(ctx):
                 min_diff <= difficulty <= max_diff
                 and level_id not in MAIN_LEVELS
                 and level_id != current_id
+                and level_id != key
             ):
                 level = levelDB.get(level_id)
                 if level:
+                    levelDB.fix_duplicates(key)
                     levelDB.add("weekly", level["name"], level["difficulty"], level["downloads"], level["likes"], level["time"], level["coins"], level["sender"])
                     monday = datetime.now() - timedelta(days=datetime.now().weekday())
                     monday_midnight = datetime(monday.year, monday.month, monday.day)
@@ -122,38 +106,18 @@ async def weekly(ctx):
         await ctx.send("❌ Failed to load weekly level.")
         return
 
-    emoji = get_difficulty_visual(ctx.author.id, level['difficulty'])
-    stars = min(level["difficulty"], 10)
-    mana = ORBS[stars - 1] if stars > 0 else 0
-    diamonds = DIAMONDS[stars - 1] if stars > 0 else 0
-    rate_emoji = EMOJIS['like'] if level['likes'] >= 0 else EMOJIS['dislike']
-
     played = userDB.get(ctx.author.id)['played']
-    level_cid = key + str(current_id)
 
-    users_level_data = (played[level_cid]['record']) if level_cid in played else None
-    if users_level_data == 100:
-        users_level_data = EMOJIS['checkmark']
-    elif users_level_data:
-        users_level_data = f"`{str(users_level_data)}%`"
-    else:
-        users_level_data = ""
-    
-    count_coins = (played[level_cid]['coins']) if level_cid in played else [0 for _ in range(level['coins'])]
-    level_coins = " "
-    if len(count_coins) > 0:
-        level_coins = "".join(EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in count_coins) + " "
+    level_cid = key + str(current_id)
+    level['level_id'] = level_cid
+
+    level_str = level_markdown(ctx.author.id, played, level, custom_id="weekly")
 
     embed = discord.Embed(
         title="📅 Weekly Level",
         color=discord.Color.orange()
     )
-    embed.description = (
-        f"`ID {key}:`\n"
-        f"{emoji} {level['name']} {level_coins}{users_level_data}\n"
-        f"{TAB*2}{EMOJIS['star']}{stars} {EMOJIS['diamond']}{diamonds} {EMOJIS['manaorbs']}{mana}\n"
-        f"{TAB*2}{EMOJIS['download']}{level['downloads']} {rate_emoji}{level['likes']} {EMOJIS['time']}{level_time(level['time'])}"
-    )
+    embed.description = level_str
 
     await ctx.send(embed=embed)
 
@@ -212,7 +176,6 @@ async def reward(ctx):
 async def map_pack(ctx, pack_id: str = None, collect: str = None):
     user_data = userDB.get(ctx.author.id)
     played = user_data['played']
-
     map_packs = botDB.get("mappacks")
 
     if pack_id and pack_id not in map_packs:
@@ -221,7 +184,6 @@ async def map_pack(ctx, pack_id: str = None, collect: str = None):
 
     if collect == "collect":
         pdata = map_packs[pack_id]
-
         levels = [levelDB.get(str(lid)) for lid in pdata['levels']]
         total = len(levels)
         completed = [lvl for lvl in levels if lvl['level_id'] in played and played[lvl['level_id']]['record'] == 100]
@@ -233,11 +195,11 @@ async def map_pack(ctx, pack_id: str = None, collect: str = None):
         if f"mappack{pack_id}" in user_data['collected']:
             await ctx.send(f"❌ You already collected reward from this map pack.")
             return
-        
+
         avg_difficulty = round(sum(lvl['difficulty'] for lvl in levels) / total)
         stars = min(10, avg_difficulty)
         coins = (1 if pdata['difficulty'] < 10 else 2)
-        
+
         user_data['collected'].append(f"mappack{pack_id}")
         user_data['goldcoins'] += coins
         user_data['stars'] += stars
@@ -247,70 +209,94 @@ async def map_pack(ctx, pack_id: str = None, collect: str = None):
         userDB.update_field(ctx.author.id, 'stars', user_data['stars'])
 
         embed = discord.Embed(
-            title=f"{EMOJIS[DIFFICULTIES[pdata['difficulty']-1]]} {pdata['name']} reward",
+            title=f"{EMOJIS[DIFFICULTIES[pdata['difficulty'] - 1]]} {pdata['name']} reward",
             description=f"+ {EMOJIS['star']} {stars} Stars\n+ {EMOJIS['goldcoin']} {coins} Gold Coins"
         )
-
         await ctx.send(embed=embed)
         return
+
+    if pack_id:
+        data = map_packs[pack_id]
+        levels = [levelDB.get(str(x)) for x in data['levels']]
+        field_text = ""
+
+        for level_data in levels:
+            level_str = level_markdown(ctx.author.id, played, level_data)
+            field_text += level_str
+
+        embed = discord.Embed(
+            title=f"📁 {data['name']}",
+            description=field_text,
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed)
     else:
-        if pack_id:
-            data = map_packs[pack_id]
-            levels = [levelDB.get(str(x)) for x in data['levels']]
+        pack_list = []
 
-            field_text = ""
+        for pid, pdata in map_packs.items():
+            levels = [levelDB.get(str(lid)) for lid in pdata['levels']]
+            total = len(levels)
+            avg_diff = round(sum(lvl['difficulty'] for lvl in levels) / total)
+            stars = min(10, avg_diff)
+            pack_list.append((avg_diff, stars, pid, pdata, levels, total))
 
-            for level_data in levels:
-                lid = level_data['level_id']
-                user_record = played[lid]['record'] if lid in played else None
-                if user_record == 100:
-                    user_record = EMOJIS['checkmark']
-                elif user_record is not None:
-                    user_record = f"`{user_record}%`"
-                else:
-                    user_record = ""
+        pack_list.sort(key=lambda x: (x[0], x[1]))
 
-                coins_got = played[lid]['coins'] if lid in played else [0] * level_data['coins']
-                level_coins = "".join(
-                    EMOJIS['usercoin'] if coin else EMOJIS['lockedcoin'] for coin in coins_got
-                ) + " " if coins_got else " "
+        pages = []
+        page = []
+        for avg_diff, stars, pid, pdata, levels, total in pack_list:
+            completed = sum(1 for lvl in levels if lvl['level_id'] in played and played[lvl['level_id']]['record'] == 100)
+            check = EMOJIS['checkmark'] if f"mappack{pid}" in user_data['collected'] else ""
+            coins = f"{EMOJIS['goldcoin']}{(1 if pdata['difficulty'] < 10 else 2)}"
 
-                rate_emoji = EMOJIS['like'] if level_data['likes'] >= 0 else EMOJIS['dislike']
-                field_text += (
-                    f"`ID {lid}:`\n"
-                    f"{EMOJIS[DIFFICULTIES[level_data['difficulty']-1]]} {level_data['name']} {level_coins}{user_record}\n"
-                    f"{TAB*2}{EMOJIS['star']}{min(10, level_data['difficulty'])} "
-                    f"{EMOJIS['manaorbs']}{ORBS[min(10, level_data['difficulty'])]}\n"
-                    f"{TAB*2}{EMOJIS['download']}{level_data['downloads']} {rate_emoji}{level_data['likes']} "
-                    f"{EMOJIS['time']}{level_time(level_data['time'])}\n\n"
-                )
-
-            embed = discord.Embed(
-                title=f"{EMOJIS[DIFFICULTIES[data['difficulty']-1]]} {data['name']}", 
-                description=field_text,
-                color=discord.Color.blue()
+            entry = (
+                f"`ID {pid}:`\n{EMOJIS[DIFFICULTIES[pdata['difficulty'] - 1]]} {pdata['name']} "
+                f"({completed}/{total}) {check}\n{TAB * 2}{EMOJIS['star']}{stars} {coins}\n\n"
             )
-            await ctx.send(embed=embed)
+            page.append(entry)
+            if len(page) == 5:
+                pages.append(page)
+                page = []
+        if page:
+            pages.append(page)
 
-        else:
-            embed = discord.Embed(title="📁 Map Packs", color=discord.Color.green())
-            description = ""
+        current = 0
 
-            for pid, pdata in map_packs.items():
-                levels = [levelDB.get(str(lid)) for lid in pdata['levels']]
-                total = len(levels)
-                completed = sum(1 for lvl in levels if lvl['level_id'] in played and played[lvl['level_id']]['record'] == 100)
-                check = EMOJIS['checkmark'] if f"mappack{pid}" in user_data['collected'] else ""
+        def make_embed(index):
+            embed = discord.Embed(
+                title="📁 Map Packs",
+                description="".join(pages[index]),
+                color=discord.Color.green()
+            )
+            embed.set_footer(text=f"Page {index + 1}/{len(pages)}")
+            return embed
 
-                avg_difficulty = round(sum(lvl['difficulty'] for lvl in levels) / total)
-                stars = f"{EMOJIS['star']}{min(10, avg_difficulty)}"
+        message = await ctx.send(embed=make_embed(current))
+        for emoji in ["⏮", "⬅️", "➡️", "⏭"]:
+            await message.add_reaction(emoji)
 
-                coins = f"{EMOJIS['goldcoin']}{(1 if pdata['difficulty'] < 10 else 2)}"
+        def check(reaction, user):
+            return (
+                user == ctx.author and
+                reaction.message.id == message.id and
+                str(reaction.emoji) in ["⬅️", "➡️", "⏮", "⏭"]
+            )
 
-                description += (
-                    f"`ID {pid}:`\n{EMOJIS[DIFFICULTIES[pdata['difficulty']-1]]} {pdata['name']} "
-                    f"({completed}/{total}) {check}\n{TAB*2}{stars} {coins}\n\n"
-                )
+        while True:
+            try:
+                reaction, user = await bot.wait_for("reaction_add", timeout=60.0, check=check)
+                emoji = str(reaction.emoji)
 
-            embed.description = description
-            await ctx.send(embed=embed)
+                if emoji == "⬅️" and current > 0:
+                    current -= 1
+                elif emoji == "➡️" and current < len(pages) - 1:
+                    current += 1
+                elif emoji == "⏮":
+                    current = 0
+                elif emoji == "⏭":
+                    current = len(pages) - 1
+
+                await message.edit(embed=make_embed(current))
+                await message.remove_reaction(reaction.emoji, user)
+            except asyncio.TimeoutError:
+                break

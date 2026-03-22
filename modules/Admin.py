@@ -116,44 +116,91 @@ async def add_mappack(ctx, pack_id: int, name: str, difficulty: int, levels: str
 async def delete_user(ctx, user_id: int):
     admins = botDB.get("admins") or []
     moderators = botDB.get("moderators") or []
-    if ctx.author.id in (Config.OWNER + admins + moderators) and user_id not in (Config.OWNER + admins + moderators):
-        try:
-            conn = sqlite3.connect("data/users.db")
-            cursor = conn.cursor()
+    devs = botDB.get("devs") or []
 
-            cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+    can_delete = False
+    if ctx.author.id in (Config.OWNER + admins + moderators):
+        can_delete = user_id not in (Config.OWNER + admins + moderators + devs)
+    elif ctx.author.id in devs:
+        can_delete = user_id == ctx.author.id
+
+    if not can_delete:
+        await ctx.send("⚠️ You do not have permission to delete this user.")
+        return
+
+    try:
+        user_data_before = userDB.get(user_id) or {}
+        user_data_json = json.dumps(user_data_before, indent=2, default=str)
+        if len(user_data_json) > 900:
+            user_data_json = user_data_json[:900] + "\n... (truncated)"
+
+        conn = sqlite3.connect("data/users.db")
+        cursor = conn.cursor()
+
+        if ctx.author.id in devs and ctx.author.id == user_id:
+            cursor.execute("""
+                UPDATE users SET
+                    stars = 0,
+                    diamonds = 0,
+                    goldcoins = 0,
+                    usercoins = 0,
+                    demons = 0,
+                    orbs = 0,
+                    played = '{}',
+                    icons = '[0,0,0,0,0,0,0,0]',
+                    last_send_time = 0,
+                    last_reward_time = '[0,0]',
+                    notification = '',
+                    hardest = '[1,1]',
+                    purchased = '[]',
+                    visuals = '[0,0]',
+                    collected = '[]'
+                WHERE user_id = ?
+            """, (user_id,))
             conn.commit()
             conn.close()
+            await ctx.send(f"🗑️ Dev user `{user_id}` has been reset (except creations & creatorpoints)")
+            return
 
-            if ctx.author.id != Config.OWNER[0]:
-                owner_user = await bot.fetch_user(Config.OWNER[0])
-                embed = discord.Embed(
-                    title="🗑️ User Removed",
-                    color=discord.Color.red()
-                )
+        cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+        conn.commit()
+        conn.close()
 
-                if ctx.author.id in admins:
-                    role = "Admin"
-                    emoji = EMOJIS['admin']
-                elif ctx.author.id in moderators:
-                    role = "Moderator"
-                    emoji = EMOJIS['moderator']
-                else:
-                    role = "User"
-                    emoji = "❔"
+        if ctx.author.id != Config.OWNER[0]:
+            owner_user = await bot.fetch_user(Config.OWNER[0])
+            embed = discord.Embed(
+                title="🗑️ User Removed",
+                color=discord.Color.red()
+            )
 
-                embed.add_field(name=f"{emoji} {role}", value=f"{ctx.author.mention} (`{ctx.author.id}`)", inline=False)
-                embed.add_field(name="👤 Deleted User", value=f"<@{user_id}> (`{user_id}`)", inline=True)
-                embed.set_footer(text="Check if this removal was expected or accidental.")
+            if ctx.author.id in admins:
+                role = "Admin"
+                emoji = EMOJIS['admin']
+            elif ctx.author.id in moderators:
+                role = "Moderator"
+                emoji = EMOJIS['moderator']
+            else:
+                role = "User"
+                emoji = "❔"
 
-                try:
-                    await owner_user.send(embed=embed)
-                except discord.Forbidden:
-                    await ctx.send("⚠️ Could not DM the owner (they might have DMs disabled).")
+            embed.add_field(name=f"{emoji} {role}", value=f"{ctx.author.mention} (`{ctx.author.id}`)", inline=False)
+            embed.add_field(name="👤 Deleted User", value=f"<@{user_id}> (`{user_id}`)", inline=True)
 
-            await ctx.send(f"🗑️ User with ID `{user_id}` has been **successfully deleted** from the database.")
-        except Exception as e:
-            await ctx.send(f"⚠️ An error occurred while deleting the user: `{e}`")
+            if user_data_before:
+                embed.add_field(name="🧾 Deleted User Snapshot", value=f"```json\n{user_data_json}\n```", inline=False)
+            else:
+                embed.add_field(name="🧾 Deleted User Snapshot", value="No user data found in cache/DB before deletion.", inline=False)
+
+            embed.set_footer(text="Check if this removal was expected or accidental. Use the snapshot to restore if needed.")
+
+            try:
+                await owner_user.send(embed=embed)
+            except discord.Forbidden:
+                await ctx.send("⚠️ Could not DM the owner (they might have DMs disabled).")
+
+        await ctx.send(f"🗑️ User with ID `{user_id}` has been **successfully deleted** from the database.")
+    except Exception as e:
+        await ctx.send(f"⚠️ An error occurred while deleting the user: `{e}`")
 
 async def delete_level(ctx, level_id: str):
     admins = botDB.get("admins") or []
@@ -268,6 +315,61 @@ async def delete_sent(ctx, level_id: int):
 
     await ctx.send(f"🗑️ Submission with level ID `{level_id}` has been **successfully removed**.")
 
+async def demonlist_pos(ctx, level_id: str, position: int):
+    admins = botDB.get("admins") or []
+    moderators = botDB.get("moderators") or []
+
+    if ctx.author.id in (admins + Config.OWNER + moderators):
+        level_data = levelDB.get(str(level_id))
+        if not level_data:
+            await ctx.send("❌ Level not found in the database.")
+            return
+
+        demonlist = botDB.get("demonlist") or []
+
+        insert_index = max(0, min(position - 1, len(demonlist)))
+
+        if level_id in demonlist or position == 0:
+            demonlist.remove(level_id)
+        
+        if position != 0:
+            demonlist.insert(insert_index, level_id)
+
+        botDB.update_field("demonlist", demonlist)
+
+        if ctx.author.id != Config.OWNER[0]:
+            owner_user = await bot.fetch_user(Config.OWNER[0])
+            embed = discord.Embed(
+                title=f"{EMOJIS['demon']} Demonlist Updated",
+                color=discord.Color.dark_red()
+            )
+
+            if ctx.author.id in admins:
+                role = "Admin"
+                emoji = EMOJIS['admin']
+            elif ctx.author.id in moderators:
+                role = "Moderator"
+                emoji = EMOJIS['moderator']
+            else:
+                role = "Unknown"
+                emoji = "❔"
+
+            embed.add_field(name=f"{emoji} {role}", value=f"{ctx.author.mention} (`{ctx.author.id}`)", inline=False)
+            embed.add_field(name="🆔 Level ID", value=f"`{level_id}`", inline=True)
+            embed.add_field(name="🏷️ Level Name", value=f"`{level_data['name']}`", inline=True)
+            embed.add_field(name="📌 Position", value=f"`{position}`", inline=True)
+            embed.set_footer(text="Check the updated demonlist order.")
+
+            try:
+                await owner_user.send(embed=embed)
+            except discord.Forbidden:
+                await ctx.send("⚠️ Could not DM the owner (they might have DMs disabled).")
+
+        if position != 0:
+            await ctx.send(f"✅ Level `{level_data['name']}` ID: {level_id} successfully inserted at position `{insert_index+1}` in the demonlist.")
+        else:
+            await ctx.send(f"🗑 Level `{level_data['name']}` ID: {level_id} successfully deleted from the demonlist.")
+
 async def cheats(ctx, mode: str, switch: str):
     if ctx.author.id not in permission(3):
         return
@@ -289,9 +391,22 @@ async def cheats(ctx, mode: str, switch: str):
 async def manage(ctx, obj_type: str, obj_id: str, field: str, data: str):
     if ctx.author.id not in permission(3):
         return
-    
-    if obj_type == "users":
+
+    devs = botDB.get("devs") or []
+    is_dev = ctx.author.id in devs
+
+    normalized_type = obj_type.lower()
+    if normalized_type == "users":
         obj_id = int(obj_id)
+
+    if is_dev:
+        if normalized_type != "user":
+            await ctx.send("❌ Devs can only manage their own user stats.")
+            return
+
+        if obj_id != ctx.author.id:
+            await ctx.send("❌ Devs can only manage their own user stats.")
+            return
 
     try:
         parsed_data = ast.literal_eval(data)

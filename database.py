@@ -23,15 +23,15 @@ class UserDatabase:
                     creatorpoints INTEGER DEFAULT 0,
                     orbs INTEGER DEFAULT 0,
                     played TEXT DEFAULT '{}',
-                    icons TEXT DEFAULT '[0,0,0,0,0,0,0]',
+                    icons TEXT DEFAULT '[0,0,0,0,0,0,0,0]',
                     last_send_time INTEGER DEFAULT 0,
                     last_reward_time TEXT DEFAULT '[0,0]',
                     notification TEXT DEFAULT '',
                     hardest TEXT DEFAULT '[1,1]',
-                    purchased TEXT DEFAULT "[]",
-                    visuals TEXT DEFAULT "[0,0]",
-                    creations TEXT DEFAULT "[]",
-                    collected TEXT DEFAULT "[]"
+                    purchased TEXT DEFAULT '[]',
+                    visuals TEXT DEFAULT '[0,0]',
+                    creations TEXT DEFAULT '[]',
+                    collected TEXT DEFAULT '[]'
                 )
             """)
             conn.commit()
@@ -41,7 +41,29 @@ class UserDatabase:
             cursor = conn.cursor()
             cursor.execute("SELECT 1 FROM users WHERE user_id = ?", (user_id,))
             if cursor.fetchone() is None:
-                cursor.execute("INSERT INTO users (user_id) VALUES (?)", (user_id,))
+                cursor.execute("""
+                    INSERT INTO users (
+                        user_id,
+                        played,
+                        icons,
+                        last_reward_time,
+                        hardest,
+                        purchased,
+                        visuals,
+                        creations,
+                        collected
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    user_id,
+                    json.dumps({}),
+                    json.dumps([0,0,0,0,0,0,0,0]),
+                    json.dumps([0,0]),
+                    json.dumps([1,1]),
+                    json.dumps([]),
+                    json.dumps([0,0]),
+                    json.dumps([]),
+                    json.dumps([])
+                ))
                 conn.commit()
 
     def get(self, user_id: int):
@@ -73,7 +95,12 @@ class UserDatabase:
             return None
 
     def update_field(self, user_id: int, field: str, value):
-        if field in ["played", "icons", "hardest", "purchased", "visuals", "creations", "last_reward_time", "collected"]:
+        json_fields = [
+            "played", "icons", "hardest", "purchased",
+            "visuals", "creations", "last_reward_time", "collected"
+        ]
+
+        if field in json_fields:
             value = json.dumps(value)
         with self._connect() as conn:
             cursor = conn.cursor()
@@ -136,6 +163,18 @@ class LevelDatabase:
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute(f"UPDATE levels SET {field} = ? WHERE level_id = ?", (value, level_id))
+            conn.commit()
+
+    def fix_duplicates(self, name: str):
+        with self._connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"""
+                DELETE FROM levels
+                WHERE level_id = '{name}'
+                AND rowid NOT IN (
+                    SELECT MAX(rowid) FROM levels WHERE level_id = '{name}'
+                )
+            """)
             conn.commit()
 
 class BotDatabase:

@@ -16,7 +16,7 @@ async def shop(ctx):
 
         for idx, icon in enumerate(ICONS[page_index]):
             icon_id = f"{page_index + 1}.{idx}"
-            price_text = f"{EMOJIS['manaorbs']}{PRICES[idx]}" if user_data and not icon_id in user_data['purchased'] and PRICES[idx] > 0 else ""
+            price_text = f"{EMOJIS[PRICES[idx][0]]}{PRICES[idx][1]}" if user_data and not icon_id in user_data['purchased'] and PRICES[idx][1] > 0 else ""
             embed.description += f"{icon} ID: `{icon_id}` {price_text}\n"
         
         embed.set_footer(text=f"Page {page_index + 1} of {len(ICONS)}")
@@ -68,28 +68,28 @@ async def buy(ctx, icon_id: str):
         return
 
     purchased_icons = user_data.get("purchased", [])
-    if icon_id in purchased_icons or PRICES[number] == 0:
+    if icon_id in purchased_icons or PRICES[number][1] == 0:
         await ctx.send("❌ You already have this icon or it is free.")
         return
 
-    orbs = user_data.get("orbs", 0)
     price = PRICES[number]
+    value = user_data.get(price[0], 0)
 
-    if orbs < price:
-        await ctx.send(f"❌ You need {price} orbs to buy this icon, but you only have {orbs}.")
+    if value < price[1]:
+        await ctx.send(f"❌ You need {price[1]} {price[0]} to buy this icon, but you only have {value}.")
         return
 
-    userDB.update_field(user_id, "orbs", orbs - price)
+    userDB.update_field(user_id, price[0], value - price[1])
 
     purchased_icons.append(icon_id)
     userDB.update_field(user_id, "purchased", purchased_icons)
 
     embed = discord.Embed(
         title="Icon Purchased 🛒",
-        description=f"You successfully purchased a **{GAMEMODES[gamemode - 1]}** {ICONS[gamemode - 1][number]} for **{price}**{EMOJIS['manaorbs']}!",
+        description=f"You successfully purchased a **{GAMEMODES[gamemode - 1]}** {ICONS[gamemode - 1][number]} for **{price[1]}**{EMOJIS[price[0]]}!",
         color=discord.Color.blue()
     )
-    embed.set_footer(text=f"Icon ID: {icon_id} | Remaining orbs: {orbs - price}")
+    embed.set_footer(text=f"Icon ID: {icon_id} | Remaining {price[0]}: {value - price[1]}")
 
     await ctx.send(embed=embed)
 

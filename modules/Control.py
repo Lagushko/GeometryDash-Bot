@@ -74,7 +74,7 @@ async def role(ctx, role_name: str, action: str, user_id: int):
     if ctx.author.id not in (Config.OWNER):
         return
 
-    valid_roles = ["admin", "moderator", "helper"]
+    valid_roles = ["dev", "admin", "moderator", "helper"]
     valid_actions = ["add", "remove"]
 
     if role_name not in valid_roles:

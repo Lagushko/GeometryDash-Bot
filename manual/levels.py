@@ -4,7 +4,7 @@ result = []
 
 loads = "0"
 likes = "0"
-author = "736932516891590666"
+author = "1485184950734032927"
 
 def smart_input(prompt, fields):
     while True:
@@ -62,13 +62,21 @@ for cmd in result:
 
 confirm = input("\nAdd these levels to the database? (y/n): ").lower()
 if confirm == "y":
+    added = 0
+    skipped = 0
+
     for level in result:
         level_id, name, difficulty, downloads, likes, time, coins, sender = level
         name = name.replace("-", " ")
+        
+        if levelDB.get(level_id):
+            print(f"⚠️ Level {level_id} already exists, skipped.")
+            skipped += 1
+            continue
 
         levelDB.add(level_id, name, difficulty, downloads, likes, time, coins, sender)
 
-        recent = botDB.get("recent")
+        recent = botDB.get("recent") or []
         recent.append(level_id)
         if len(recent) > 25:
             recent.pop(0)
@@ -76,12 +84,17 @@ if confirm == "y":
 
         data = userDB.get(sender)
         if data:
-            current_cp = data["creatorpoints"]
-            creations = data["creations"]
-            creations.append(int(level_id))
-            userDB.update_field(sender, "creatorpoints", current_cp + 1)
-            userDB.update_field(sender, "creations", creations)
+            current_cp = data.get("creatorpoints", 0)
+            creations = data.get("creations", [])
 
-    print(f"\n✅ {len(result)} levels added to the database.")
+            if int(level_id) not in creations:
+                creations.append(int(level_id))
+                userDB.update_field(sender, "creatorpoints", current_cp + 1)
+                userDB.update_field(sender, "creations", creations)
+
+        added += 1
+
+    print(f"\n✅ Added: {added}")
+    print(f"⚠️ Skipped (already exist): {skipped}")
 else:
     print("\n❌ Operation cancelled.")

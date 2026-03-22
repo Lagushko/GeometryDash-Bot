@@ -63,12 +63,15 @@ async def profile(ctx, member: discord.Member = None):
 
     admins = botDB.get('admins') or []
     moderators = botDB.get('moderators') or []
+    devs = botDB.get('devs') or []
 
     status = ""
     if user_id in moderators:
         status = EMOJIS['moderator'] + " "
     if user_id in (Config.OWNER + admins):
         status = EMOJIS['admin'] + " "
+    if user_id in devs:
+        status = "DEV " + EMOJIS['creatorpoints'] + " "
 
     data = userDB.get(user_id)
 
@@ -78,16 +81,24 @@ async def profile(ctx, member: discord.Member = None):
     
     with userDB._connect() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM users ORDER BY stars DESC")
+        devs = botDB.get("devs") or []
+        if devs:
+            placeholders = ",".join("?" * len(devs))
+            cursor.execute(f"SELECT user_id FROM users WHERE user_id NOT IN ({placeholders}) ORDER BY stars DESC", devs)
+        else:
+            cursor.execute("SELECT user_id FROM users ORDER BY stars DESC")
         top_list = [row[0] for row in cursor.fetchall()]
 
     top = top_list.index(user_id) + 1 if user_id in top_list and data['stars'] > 0 else None
     rank = EMOJIS["rank" + (str(get_ranking(top)) if top else "7")]
-    top_message = f"{rank} Top {top}" if top else f"{rank} Top ?"
+    if user_id in devs:
+        top_message = "❗ Developer accounts are out of top"
+    else:
+        top_message = f"{rank} Top {top}" if top else f"{rank} Top ?"
 
     embed = discord.Embed(
         title=f"{status}{member.name}",
-        description=(f"User ID: `{user_id}`\n{top_message}" if ctx.author.id in permission(2) else top_message),
+        description=(f"🆔 User ID: `{user_id}`\n{top_message}" if ctx.author.id in permission(2) else top_message),
         color=discord.Color.purple()
     )
 
@@ -119,7 +130,12 @@ async def leaderboards(ctx, scope: str = "global"):
     conn = sqlite3.connect("data/users.db")
     cursor = conn.cursor()
 
-    cursor.execute("SELECT user_id, stars FROM users WHERE stars > 0 ORDER BY stars DESC")
+    devs = botDB.get("devs") or []
+    if devs:
+        placeholders = ",".join("?" * len(devs))
+        cursor.execute(f"SELECT user_id, stars FROM users WHERE stars > 0 AND user_id NOT IN ({placeholders}) ORDER BY stars DESC", devs)
+    else:
+        cursor.execute("SELECT user_id, stars FROM users WHERE stars > 0 ORDER BY stars DESC")
     all_global = cursor.fetchall()
 
     global_ranks = {}
